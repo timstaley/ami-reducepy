@@ -33,7 +33,7 @@ class Reduce(object):
 
     def __init__(self,
                  ami_rootdir,
-                 large_array=True,
+                 array='LA',
 #                 working_dir=None
                  ):
 #        if working_dir is None:
@@ -45,7 +45,7 @@ class Reduce(object):
         self.child.expect(self.prompt)
         self.files = dict()
         #Ready for action.
-        if large_array:
+        if array=='LA':
             self.switch_to_large_array()
         self.update_files()
 

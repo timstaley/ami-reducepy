@@ -12,7 +12,7 @@ import ami
 
 def main():
     options, outputfilename = handle_args(sys.argv[1:])
-    r = ami.Reduce(options.amidir)
+    r = ami.Reduce(options.amidir, options.array)
     named_groups = r.group_pointings()
     json.dump(named_groups, open(outputfilename, 'w'),
               sort_keys=True, indent=4)
