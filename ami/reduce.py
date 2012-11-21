@@ -19,11 +19,14 @@ the underlying fortran code, but this is a reasonably good quick solution.
 import os
 import pexpect
 from environments import ami_env
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 import logging
 import astropysics.coords
 
-class RawFileKeys:
+SimpleCoords = namedtuple('SimpleCoords', 'ra dec')
+
+#RawKeys
+class RawKeys:
     comment = 'comment'
     target_pointing = 'pointing'
 
@@ -47,6 +50,10 @@ class Reduce(object):
         #Ready for action.
         if array=='LA':
             self.switch_to_large_array()
+        elif array!='SA':
+            raise ValueError("Initialisation error: Array must be 'LA' or 'SA'.")
+        self.array = array
+        
         self.update_files()
 
     def switch_to_large_array(self):
@@ -82,14 +89,20 @@ class Reduce(object):
             fname = cols[0]
             if fname in self.files:
                 if len(cols) > 1:
-                    self.files[fname][RawFileKeys.comment] = cols[1]
+                    self.files[fname][RawKeys.comment] = cols[1]
 
     def get_obs_details(self, filename):
         p = self.child
         p.sendline(r'list observation {0} \ '.format(filename))
         p.expect(self.prompt)
         obs_lines = p.before.split('\n')[2:]
-        for line in obs_lines:
+        info = self.files[filename] 
+        info[RawKeys.target_pointing] = Reduce._parse_coords(filename, obs_lines)
+        return info
+    
+    @staticmethod
+    def _parse_coords(filename, obs_listing):
+        for line in obs_listing:
             if 'Tracking' in line:
                 if not 'J2000' in line:
                     logging.warn("Obs pointing may not be in J2000 format:" 
@@ -98,18 +111,25 @@ class Reduce(object):
                 coords_str = line[len('Tracking    : '):]
                 coords_str = coords_str.strip()
                 coords_str = coords_str[:-len('J2000')].strip()
-#                print "COSTR", coords_str
+                #Two cases depending whether declination is +ve or -ve:
                 if '-' in coords_str:
                     ra_dec = coords_str.split('  ')
                 else:
                     ra_dec = coords_str.split('   ')
-                ra = astropysics.coords.AngularCoordinate(
-                      ra_dec[0].replace(' ', ':'), sghms=True)
-                dec = astropysics.coords.AngularCoordinate(
-                      ra_dec[1].replace(' ', ':'), sghms=False)
-                pointing = astropysics.coords.FK5Coordinates(ra, dec)
-                self.files[filename][RawFileKeys.target_pointing] = pointing
-        return self.files[filename]
+                pointing = SimpleCoords(ra_dec[0], ra_dec[1])
+                return pointing
+        raise ValueError("Parsing error for file: %s, coords not found" 
+                            % filename )
+
+    @staticmethod
+    def _convert_to_ap_FK5_coords(simplecoords):
+        ra = astropysics.coords.AngularCoordinate(
+              simplecoords.ra.replace(' ', ':'), sghms=True)
+        dec = astropysics.coords.AngularCoordinate(
+              simplecoords.dec.replace(' ', ':'), sghms=False)
+        
+        return astropysics.coords.FK5Coordinates(ra, dec)
+        
 
     def group_pointings(self, pointing_tolerance_in_degrees=0.5):
         """
@@ -128,42 +148,41 @@ class Reduce(object):
         group_pointings = defaultdict(list) #Dict, pointing --> Files
         tolerance_deg = pointing_tolerance_in_degrees
         
-        for f in self.files:
-            if RawFileKeys.target_pointing not in self.files[f]:
-                self.get_obs_details(f)
+        for filename, info in self.files.iteritems():
+            if info[RawKeys.target_pointing] is None:
+                self.get_obs_details(filename)
 
         for f, info in self.files.iteritems():
-            pointing = info[RawFileKeys.target_pointing]
+            file_pointing = info[RawKeys.target_pointing]
             matched = False
-            for p0 in group_pointings.iterkeys():
-                if (pointing - p0).degrees < tolerance_deg:
-                    group_pointings[p0].append(f)
+            for gp in group_pointings.iterkeys():
+                # Unfortunately, FK5 class doesn't serialize well
+                # So we only use them as tempvars for easy comparison,
+                # Rather than storing in the datadump.
+                p0 = Reduce._convert_to_ap_FK5_coords(gp)
+                p1 = Reduce._convert_to_ap_FK5_coords(file_pointing)
+                if (p0 - p1).degrees < tolerance_deg:
+                    group_pointings[gp].append(f)
                     matched = True
 #                    print "MATCH", f
-                    print group_pointings[p0]
+#                    print group_pointings[gp]
 
             if matched is False:
-                group_pointings[pointing].append(f)
+                group_pointings[file_pointing].append(f)
 #                print "NEW GROUP", f
-                print group_pointings[pointing]
+#                print group_pointings[file_pointing]
         
-        # Now we have a bunch of dicts, that look like:
-        # { FK5Coordinates --> [list of filenames] } 
-        # Unfortunately, FK5 class doesn't serialize well - so we massage 
-        # the data structures a bit next:
-        
-        #Convert keys to strings:
-        sgroups = { str(k.ra.d) + ' ' + str(k.dec.d) : {'files':v}
-                    for k, v in group_pointings.iteritems()}
-        
-        #Generally the filenames are more recognisable than plain co-ords
-        #So we rename each group by the first (alphabetical) filename:
+        #Generally the filenames / target names are more recognisable than 
+        #plain co-ords
+        #So we rename each group by the first (alphabetical) filename,
+        #Which should be a target name.
+        # (After splitting off the date suffix.)
         named_groups = {}
-        for k, grp in sgroups.iteritems():
-            name = sorted(grp['files'])[0].split('-')[0]
+        for p, files in group_pointings.iteritems():
+            name = sorted(files)[0].split('-')[0]
             named_groups[name] = {}
-            named_groups[name]['files'] = grp['files']
-            named_groups[name]['pointing'] = k
+            named_groups[name]['files'] = files
+            named_groups[name]['pointing'] = p
         return named_groups
 
 

@@ -11,11 +11,12 @@ import ami
 
 
 def main():
-    options, outputfilename = handle_args(sys.argv[1:])
+    options = handle_args(sys.argv[1:])
     r = ami.Reduce(options.amidir, options.array)
     named_groups = r.group_pointings()
-    json.dump(named_groups, open(outputfilename, 'w'),
-              sort_keys=True, indent=4)
+    with open(options.datasets, 'w') as f:
+        json.dump([r.array , named_groups], f,
+                  sort_keys=True, indent=4)
     return 0
     
 def handle_args(argv):
@@ -24,25 +25,31 @@ def handle_args(argv):
     """
     default_ami_dir = "/opt/ami" 
     default_array = 'LA'
+    default_short_listings_filename = 'datasets.json'
+    default_full_listings_filename = 'full_listings.json'
     
     usage = """usage: %prog [options] outputfile\n"""\
     """Outputs a file in JSON format listing AMI files, grouped by pointing."""
     
     parser = optparse.OptionParser(usage)
-        
-        
+                
     parser.add_option("--amidir", default=default_ami_dir, 
                        help="Path to AMI directory, default: " + default_ami_dir)
     parser.add_option("--array", default=default_array,
                        help="Array data to work with (SA/LA), defaults to: " 
                        + default_array)
+    
+    parser.add_option('-d', '--datasets', default=default_short_listings_filename, 
+                       help="Path to dataset groupings output file, default: " 
+                                + default_short_listings_filename)
+    
+    parser.add_option('-l', '--listings', default=default_full_listings_filename, 
+                       help="Path to obs listings output file, default: " 
+                                + default_full_listings_filename)
 
     options, args =  parser.parse_args(argv)
-    if len(args)!=1:
-        parser.print_help()
-        sys.exit(1)
-    print "Will output listings to file:", args[0]
-    return options, args[0]
+    print "Writing data details to files:", options.datasets, ",",options.listings
+    return options
 
 if __name__ == "__main__":
     sys.exit(main())
