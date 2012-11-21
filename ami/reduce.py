@@ -30,6 +30,12 @@ class RawKeys:
     comment = 'comment'
     target_pointing = 'pointing'
 
+
+def ensure_dir(dirname):
+    if not os.path.isdir(dirname):
+        os.makedirs(dirname)
+
+
 class Reduce(object):
     """Class to provide an interface to AMI-reduce package"""
     prompt = 'AMI-reduce>'
@@ -37,6 +43,8 @@ class Reduce(object):
     def __init__(self,
                  ami_rootdir,
                  array='LA',
+                 log=True,
+                 logdir=None,
 #                 working_dir=None
                  ):
 #        if working_dir is None:
@@ -48,13 +56,23 @@ class Reduce(object):
         self.child.expect(self.prompt)
         self.files = dict()
         #Ready for action.
-        if array=='LA':
+        if array == 'LA':
             self.switch_to_large_array()
-        elif array!='SA':
+        elif array != 'SA':
             raise ValueError("Initialisation error: Array must be 'LA' or 'SA'.")
         self.array = array
-        
+
         self.update_files()
+        if log:
+            self.logdir = logdir
+            if self.logdir is None:
+                self.logdir = ''
+            self.logger = logging.getLogger('ami')
+            self.file_log = None
+            self.file_cmd_log = None
+
+        else:
+            self.logger = None
 
     def switch_to_large_array(self):
         """NB resets file list"""
@@ -96,17 +114,17 @@ class Reduce(object):
         p.sendline(r'list observation {0} \ '.format(filename))
         p.expect(self.prompt)
         obs_lines = p.before.split('\n')[2:]
-        info = self.files[filename] 
+        info = self.files[filename]
         info[RawKeys.target_pointing] = Reduce._parse_coords(filename, obs_lines)
         return info
-    
+
     @staticmethod
     def _parse_coords(filename, obs_listing):
         for line in obs_listing:
             if 'Tracking' in line:
                 if not 'J2000' in line:
-                    logging.warn("Obs pointing may not be in J2000 format:" 
-                         + filename +", co-ord conversion may be incorrect.")
+                    logging.warn("Obs pointing may not be in J2000 format:"
+                         + filename + ", co-ord conversion may be incorrect.")
 
                 coords_str = line[len('Tracking    : '):]
                 coords_str = coords_str.strip()
@@ -118,8 +136,8 @@ class Reduce(object):
                     ra_dec = coords_str.split('   ')
                 pointing = SimpleCoords(ra_dec[0], ra_dec[1])
                 return pointing
-        raise ValueError("Parsing error for file: %s, coords not found" 
-                            % filename )
+        raise ValueError("Parsing error for file: %s, coords not found"
+                            % filename)
 
     @staticmethod
     def _convert_to_ap_FK5_coords(simplecoords):
@@ -127,27 +145,27 @@ class Reduce(object):
               simplecoords.ra.replace(' ', ':'), sghms=True)
         dec = astropysics.coords.AngularCoordinate(
               simplecoords.dec.replace(' ', ':'), sghms=False)
-        
+
         return astropysics.coords.FK5Coordinates(ra, dec)
-        
+
 
     def group_pointings(self, pointing_tolerance_in_degrees=0.5):
         """
         Attempt to group together datasets by inspecting pointing target.
-        
-        Returns:         
+
+        Returns:
         Nested dict with structure:
         { FIRST_FILENAME_IN_GROUP:
             {
             files: [ <list of files>],
-            pointing: <string representation of group pointing> 
+            pointing: <string representation of group pointing>
             },
             ...
         }
-        """        
+        """
         group_pointings = defaultdict(list) #Dict, pointing --> Files
         tolerance_deg = pointing_tolerance_in_degrees
-        
+
         for filename, info in self.files.iteritems():
             if info[RawKeys.target_pointing] is None:
                 self.get_obs_details(filename)
@@ -171,7 +189,7 @@ class Reduce(object):
                 group_pointings[file_pointing].append(f)
 #                print "NEW GROUP", f
 #                print group_pointings[file_pointing]
-        
+
         #Generally the filenames / target names are more recognisable than 
         #plain co-ords
         #So we rename each group by the first (alphabetical) filename,
@@ -184,6 +202,40 @@ class Reduce(object):
             named_groups[name]['files'] = files
             named_groups[name]['pointing'] = p
         return named_groups
+
+    def _setup_file_loggers(self, filename, file_logdir):
+        if (self.logger is not None) or (file_logdir is not None):
+            if file_logdir is None:
+                file_logdir = self.logdir
+
+            ensure_dir(file_logdir)
+            name = os.path.splitext(filename)[0]
+            self.file_log = logging.getLogger('ami.' + name)
+            self.file_log.setLevel(logging.DEBUG)
+            fh = logging.FileHandler(
+                         os.path.join(file_logdir, name + '.ami.log'))
+            self.file_log.addHandler(fh)
+
+            self.file_cmd_log = logging.getLogger('ami.commands.' + name)
+            self.file_cmd_log.setLevel(logging.DEBUG)
+            fh = logging.FileHandler(
+                         os.path.join(file_logdir, name + '.ami.commands'))
+            self.file_cmd_log.addHandler(fh)
+
+    def command(self, command):
+        self.file_cmd_log.debug(command)
+        self.child.sendline(command)
+        self.child.expect(self.prompt)
+        self.file_log.debug('%s%s', self.prompt, self.child.before)
+        return self.child.before
+
+
+    def set_active_file(self, filename, file_logdir=None):
+        filename = filename.strip()
+        self.logger.info('Active file: %s', filename)
+        self._setup_file_loggers(filename, file_logdir)
+        self.command(r'file %s \ ' % filename)
+
 
 
 
