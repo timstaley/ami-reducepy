@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import optparse
 import os
 import sys
@@ -49,14 +51,8 @@ def main():
                 r.set_active_file(rawfile, file_logdir=grp_dir)
                 r.run_script(standard_reduction_script)
                 r.write_files(rawfile, output_dir=grp_dir)
-#                r"""
-
-#write fits no no all 3-8 all {output} \
-#quit
-#"""
-
             except (ValueError, IOError):
-                logging.warn("Hit exception reducing file: %s", rawfile)
+                logging.error("Hit exception reducing file: %s", rawfile)
                 continue
 
     return 0

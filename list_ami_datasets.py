@@ -12,7 +12,7 @@ import ami
 
 def main():
     options = handle_args(sys.argv[1:])
-    r = ami.Reduce(options.amidir, options.array)
+    r = ami.Reduce(options.ami_dir, options.array)
     named_groups = r.group_pointings()
     with open(options.datasets, 'w') as f:
         json.dump([r.array , named_groups], f,
@@ -33,7 +33,7 @@ def handle_args(argv):
     
     parser = optparse.OptionParser(usage)
                 
-    parser.add_option("--amidir", default=default_ami_dir, 
+    parser.add_option("--ami-dir", default=default_ami_dir, 
                        help="Path to AMI directory, default: " + default_ami_dir)
     parser.add_option("--array", default=default_array,
                        help="Array data to work with (SA/LA), defaults to: " 
