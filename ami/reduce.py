@@ -25,11 +25,7 @@ import astropysics.coords
 
 SimpleCoords = namedtuple('SimpleCoords', 'ra dec')
 
-#RawKeys
-class RawKeys:
-    comment = 'comment'
-    target_pointing = 'pointing'
-
+from keys import (RawKeys, GroupKeys)
 
 def ensure_dir(dirname):
     if not os.path.isdir(dirname):
@@ -116,7 +112,15 @@ class Reduce(object):
         obs_lines = p.before.split('\n')[2:]
         info = self.files[filename]
         info[RawKeys.target_pointing] = Reduce._parse_coords(filename, obs_lines)
+        info[RawKeys.calibrator] = Reduce._parse_calibrator(obs_lines)
         return info
+
+    @staticmethod
+    def _parse_calibrator(obs_listing):
+        for line in obs_listing:
+            if 'with calibrator' in line:
+                tokens = line.split()
+                return tokens[-1]
 
     @staticmethod
     def _parse_coords(filename, obs_listing):
@@ -199,8 +203,8 @@ class Reduce(object):
         for p, files in group_pointings.iteritems():
             name = sorted(files)[0].split('-')[0]
             named_groups[name] = {}
-            named_groups[name]['files'] = files
-            named_groups[name]['pointing'] = p
+            named_groups[name][GroupKeys.files] = files
+            named_groups[name][GroupKeys.pointing] = p
         return named_groups
 
     def _setup_file_loggers(self, filename, file_logdir):
@@ -213,31 +217,62 @@ class Reduce(object):
             self.file_log = logging.getLogger('ami.' + name)
             self.file_log.setLevel(logging.DEBUG)
             fh = logging.FileHandler(
-                         os.path.join(file_logdir, name + '.ami.log'))
+                         os.path.join(file_logdir, name + '.ami.log'),
+                         mode='w')
             self.file_log.addHandler(fh)
 
             self.file_cmd_log = logging.getLogger('ami.commands.' + name)
             self.file_cmd_log.setLevel(logging.DEBUG)
             fh = logging.FileHandler(
-                         os.path.join(file_logdir, name + '.ami.commands'))
+                         os.path.join(file_logdir, name + '.ami.commands'),
+                         mode='w')
             self.file_cmd_log.addHandler(fh)
 
-    def command(self, command):
+    def run_command(self, command):
         self.file_cmd_log.debug(command)
         self.child.sendline(command)
         self.child.expect(self.prompt)
         self.file_log.debug('%s%s', self.prompt, self.child.before)
         return self.child.before
 
+    def run_script(self, script_string):
+        """Takes a script of commands, one command per line"""
+        command_list = script_string.split('\n')
+        for command in command_list:
+            self.run_command(command)
+
 
     def set_active_file(self, filename, file_logdir=None):
-        filename = filename.strip()
+        filename = filename.strip() #Ensure no stray whitespace
         self.logger.info('Active file: %s', filename)
         self._setup_file_loggers(filename, file_logdir)
-        self.command(r'file %s \ ' % filename)
+        self.run_command(r'file %s \ ' % filename)
+        self.get_obs_details(filename)
 
 
+    def write_files(self, rawfile, output_dir):
+        """Writes out UVFITs files.
 
+        NB: You should use this rather than performing writes manually:
+        ``reduce`` cannot handle long file paths,
+        so rather than cripple the scripting functionality,
+        this function hacks around the limitations.
+        Kludgey but effective.
+        """
+        ensure_dir(output_dir)
+        tgt_name = os.path.splitext(rawfile)[0]
+        tgt_path = os.path.join(output_dir, tgt_name + '.fits')
+        cal_basename = (self.files[rawfile][RawKeys.calibrator] + '-' +
+                        tgt_name.split('-')[-1] + 'C.fits')
+        cal_path = os.path.join(output_dir, cal_basename)
+        tgt_temp = os.path.basename(os.tempnam('./', 'ami_')) + '.fits'
+        cal_temp = os.path.basename(os.tempnam('./', 'ami_')) + '.fits'
+        self.run_command(r'write fits no no all 3-8 all %s %s \ ' %
+                (tgt_temp, cal_temp))
+        self.logger.info("Renaming tempfile %s -> %s", tgt_temp, tgt_path)
+        os.rename(tgt_temp, tgt_path)
+        self.logger.info("Renaming tempfile %s -> %s", cal_temp, cal_path)
+        os.rename(cal_temp, cal_path)
 
 
 

@@ -5,21 +5,66 @@ import logging
 import json
 
 import ami
-from ami.keys import ImageKeys as IKeys
+from ami.keys import (GroupKeys, RawKeys)
 
+standard_reduction_script = \
+r"""
+flag all
+flag int \
+subtract modmeans \
+subtract zeros \
+subtract means \
+update pcal \
+fft \
+frotate forward y n \
+flag amp all all field yes 1 \
+apply rain \
+flag amp all all field no 0.432 1 \
+flag amp all all field no 0.1 20 \
+frotate forward n y \
+cal inter \
+reweight \
+show flagging no yes \
+smooth 50 \
+show flagging no yes \
+flag bad cal all all all \
+scan dat cal yes \
+scan dat field yes \
+show flagging no yes \
+"""
 
 def main():
     options, groups_file = handle_args(sys.argv[1:])
     if groups_file:
         array, groups = json.load(open(groups_file))
-    print "Array:", array
+    r = ami.Reduce(options.ami_dir, array=array, logdir=options.output_dir)
+    output_preamble_to_log(groups)
+    for grp_name in sorted(groups.keys()):
+        files = groups[grp_name][GroupKeys.files]
+        grp_dir = os.path.join(options.output_dir, grp_name, 'ami')
+        ensure_dir(grp_dir)
+        for rawfile in files:
+            try:
+                logging.info("Reducing rawfile %s", rawfile)
+                r.set_active_file(rawfile, file_logdir=grp_dir)
+                r.run_script(standard_reduction_script)
+                r.write_files(rawfile, output_dir=grp_dir)
+#                r"""
+
+#write fits no no all 3-8 all {output} \
+#quit
+#"""
+
+            except (ValueError, IOError):
+                logging.warn("Hit exception reducing file: %s", rawfile)
+                continue
 
     return 0
 
 
 def handle_args(argv):
     """
-    Default values for the script are defined here.
+    Default values are defined here.
     """
     default_output_dir = os.path.expanduser("~/ami_results")
     default_ami_dir = "/opt/ami"
@@ -34,10 +79,12 @@ def handle_args(argv):
 #          help="Reprocess with the AMI pipeline even if the output exists "
 #                "(default False)")
 
-    parser.add_option("--amidir", default=default_ami_dir,
+    parser.add_option("--ami-dir", default=default_ami_dir,
                        help="Path to AMI directory, default: " + default_ami_dir)
 
     options, args = parser.parse_args(argv)
+    options.ami_dir = os.path.expanduser(options.ami_dir)
+    options.output_dir = os.path.expanduser(options.output_dir)
     if len(args) != 1:
         parser.print_help()
         sys.exit(1)
@@ -69,5 +116,4 @@ if __name__ == "__main__":
     log_stdout = logging.StreamHandler(sys.stdout)
     log_stdout.setLevel(logging.INFO)
     logger.addHandler(log_stdout)
-    logging.debug('test')
     sys.exit(main())
