@@ -30,14 +30,11 @@ From a radio astronomy point of view:
  
 
 From a software engineering point of view:
- ``reduce`` is a textbook example of legacy scientific software - 
- well used, it has performed reliably for years and is still producing
- valuable scientific data. 
- Written in Fortran, with an interactive terminal interface, the pipeline takes a 
- little coaxing to co-operate with calling scripts.
- Fortunately, the python library
- ``pexpect`` provides an easy mechanism to emulate human interaction, 
- upon which I've built an interface class.
+ Written in Fortran, with an interactive terminal interface, the ``reduce`` 
+ pipeline takes a little coaxing to co-operate with calling scripts, 
+ making automated processing of large numbers of files tricky.
+ Fortunately, the python library ``pexpect`` provides an easy mechanism 
+ to emulate human interaction, upon which I've built an interface class.
  Limitations such as a maximum path length of ~32 chars are circumvented
  with a few careful hacks. 
  The python logging libraries then allow us provide the user with 
