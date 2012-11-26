@@ -52,6 +52,7 @@ def main():
                              "Reducing rawfile %s ...", rawfile)
                 r.set_active_file(rawfile, file_logdir=grp_dir)
                 r.run_script(standard_reduction_script)
+                r.update_flagging_info()
                 r.write_files(rawfile, output_dir=grp_dir)
                 info_filename = os.path.splitext(rawfile)[0]+'_info.json'
                 with open(os.path.join(grp_dir, info_filename),'w') as f:

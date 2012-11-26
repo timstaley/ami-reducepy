@@ -52,7 +52,8 @@ class Reduce(object):
                           cwd=self.working_dir,
                           env=ami_env(ami_rootdir))
         self.child.expect(self.prompt)
-        #Records all known information about the fileset:
+        #Records all known information about the fileset,
+        #Each file entry is initially a ``defaultdict(lambda : None)``
         self.files = dict()
         #Used for updating the relevant record in self.files, also logging:
         self.active_file = None
@@ -239,12 +240,22 @@ class Reduce(object):
         self.child.expect(self.prompt)
         self.file_log.debug('%s%s', self.prompt, self.child.before)
         self._parse_command_output(command, self.child.before.split('\n'))
-        return self.child.before
+        return self.child.before.split('\n')
     
     def _parse_command_output(self, command, output_lines):
 #        try:
+        file_info = self.files[self.active_file] 
         if 'rain' in command:
-            self._parse_rain_results(output_lines)
+            rain_amp_corr = self._parse_rain_results(output_lines)
+            file_info[RawKeys.rain] = rain_amp_corr
+            self.logger.info("Rain mean amplitude correction factor: %s", 
+                             rain_amp_corr)
+        if 'flag' in command:
+            flagging = self._parse_flagging_results(output_lines)
+            file_info[RawKeys.flagged_max] = max(flagging,
+                                                  file_info[RawKeys.flagged_max])
+                #self.files[self.active_file][RawKeys.flagging_max]
+            
 #        except Exception as e:
 #            raise ValueError("Problem parsing command output for file: %s,",
 #                             "command: %s, error message:\n%s"
@@ -252,17 +263,19 @@ class Reduce(object):
             
         
     def _parse_rain_results(self, output_lines):
-        rain_amp_corr = None
         for line in output_lines:
             if "Mean amplitude correction factor" in line:
-                rain_amp_corr = float(line.strip().split()[-1])
-        if rain_amp_corr is None:
-            raise ValueError("Parsing error, could not find rain modulation.")
-        else:
-            self.files[self.active_file][RawKeys.rain] = rain_amp_corr
-            self.logger.info("Rain mean amplitude correction factor: %s", 
-                             rain_amp_corr)
-            
+                return float(line.strip().split()[-1])
+        raise ValueError("Parsing error, could not find rain modulation.")
+
+    def _parse_flagging_results(self,output_lines):
+        for line in output_lines:
+            if "samples flagged" in line:
+                if "Total of" in line:
+                    tokens = line.strip().split()
+                    for t in tokens:
+                        if '%' in t:
+                            return float(t.strip('%'))
 
     def run_script(self, script_string):
         """Takes a script of commands, one command per line"""
@@ -274,10 +287,10 @@ class Reduce(object):
     def set_active_file(self, filename, file_logdir=None):
         filename = filename.strip() #Ensure no stray whitespace
         self.logger.info('Active file: %s', filename)
+        self.active_file = filename
         self._setup_file_loggers(filename, file_logdir)
         self.run_command(r'file %s \ ' % filename)
         self.get_obs_details(filename)
-        self.active_file = filename
 
 
     def write_files(self, rawfile, output_dir):
@@ -311,6 +324,11 @@ class Reduce(object):
         self.logger.info("Wrote target, calib. UVFITs to:\n\t%s\n\t%s", 
                          tgt_path, cal_path)
 
+    def update_flagging_info(self):
+        lines = self.run_command(r'show flagging no yes \ ')
+        final_flagging = self._parse_flagging_results(lines)
+        self.files[self.active_file][RawKeys.flagged_final] = final_flagging
+        self.logger.info("Final flagging estimate: %s", final_flagging)
 
 
 
