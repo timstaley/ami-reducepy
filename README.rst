@@ -37,8 +37,8 @@ From a software engineering point of view:
 Requirements
 -----------------
  - A working installation of AMI-reduce (naturally)
- - `pexpect <http://pypi.python.org/pypi/pexpect/>`_ (Install with e.g `sudo apt-get install python-pexpect`)
- - `astropysics <http://packages.python.org/Astropysics/>`_ (Install with e.g. `pip install astropysics --user`) - this is used for calculating co-ordinate distances, etc.
+ - `pexpect <http://pypi.python.org/pypi/pexpect/>`_ (Install with e.g ``sudo apt-get install python-pexpect``)
+ - `astropysics <http://packages.python.org/Astropysics/>`_ (Install with e.g. ``pip install astropysics --user``) - this is used for calculating co-ordinate distances, etc.
 
 Usage
 -----------------
@@ -47,16 +47,16 @@ At this stage I haven't documented it, but in the meantime you can get started w
 example scripts described below.
 
 First try ``./list_ami_datasets.py --help`` to see your options. 
-Unless you edit the defaults in the script, or happen to have an ami installation under `/opt/ami`, then you will probably want to run::
+Unless you edit the defaults in the script, or happen to have an ami installation under */opt/ami*, then you will probably want to run::
 
  ./list_ami_datasets.py --ami-dir=/path/to/ami
 
 By default, this will output a JSON file listing dataset groupings, 
-to `datasets.json`.
+to *datasets.json*.
 This file has a very simple structure - the first element is a string 
 representing the array type ('LA' or 'SA'), 
 and after that comes a nested dictionary representing the dataset file groups.
-You should copy this file to e.g. `files_to_process.json` and then 
+You should copy this file to e.g. *files_to_process.json* and then 
 edit the nested dictionaries to leave just the files you wish to process.
 Note that the key to each top-level dictionary entry represents the group name - 
 by default this is guessed from the file names, 
@@ -68,7 +68,7 @@ After a careful inspection, you'll probably want to try something like::
 
  ./process_ami_data.py --ami-dir=/path/to/ami  files_to_process.json
 
-While that's churning, you can follow the newly created file `ami-reduce.log` to get the full input / output stream being passed to ``reduce``, with some additional comments here and there. Per-file logs will also be created alongside the output UVFITS files.
+While that's churning, you can follow the newly created file *ami-reduce.log* to get the full input / output stream being passed to ``reduce``, with some additional comments here and there. Per-file logs will also be created alongside the output UVFITS files.
 
 To Do:
 ---------
