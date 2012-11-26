@@ -53,8 +53,9 @@ Requirements
 Usage
 -----------------
 The class ``ami.Reduce`` provides an easily scriptable interface to the ``reduce`` pipeline.
-At this stage I haven't documented it, but in the meantime you can get started with the 
-example scripts described below.
+At this stage I haven't documented it, but in the meantime you can get started 
+with the example scripts described below. 
+(Of course at <500 lines, the source code is pretty easy to dive into and get aquainted with).
 
 First try ``./list_ami_datasets.py --help`` to see your options. 
 Unless you edit the defaults in the script, or happen to have an ami installation under */opt/ami*, then you will probably want to run::
