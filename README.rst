@@ -1,7 +1,7 @@
 ===============
 ami-reduce
 ===============
-A python package for scripting the AMI-reduce pipeline.
+A python package for scripting the AMI_-reduce pipeline.
 
 Rationale
 -----------
@@ -15,24 +15,34 @@ From a radio astronomy point of view:
 
  When processing the data, all output from ``reduce`` is saved to an
  accompanying log-file, retaining all information that would normally 
- be made available.
- Finally, all emulated commands passed to ``reduce`` are 
+ be available to the user from the interactive interface.
+ Meanwhile, all emulated commands passed to ``reduce`` are 
  recorded in a separate log for each file processed, so it's easy to
- re-run the script manually and tinker  with the reduction process.
+ re-run the script manually and tinker with the reduction process.
+ 
+ Additionally, when running commands listed in a script the interface
+ quietly parses key information such as flagging percentages, 
+ rain modulation, and estimated noise, from the ``reduce`` output. 
+ These are then stored to disk alongside the UVFITs in easily 
+ machine readable JSON format. 
+ (These may also be added to the UVFITS header in future.)
+
+ 
 
 From a software engineering point of view:
  ``reduce`` is a textbook example of legacy scientific software - 
  well used, it has performed reliably for years and is still producing
  valuable scientific data. 
- However, the software was not designed with large 
- automated batch processing in mind (which is now commonplace, 
- given vastly increased computational resources). 
- Written in fortran, with an interactive terminal interface, the pipeline takes a 
+ Written in Fortran, with an interactive terminal interface, the pipeline takes a 
  little coaxing to co-operate with calling scripts.
  Fortunately, the python library
- ``pexpect`` provides an easy mechanism to emulate human interaction. 
- Limitations such as a maximum path length of ~32 chars are also circumvented
- with a few careful hacks.
+ ``pexpect`` provides an easy mechanism to emulate human interaction, 
+ upon which I've built an interface class.
+ Limitations such as a maximum path length of ~32 chars are circumvented
+ with a few careful hacks. 
+ The python logging libraries then allow us provide the user with 
+ minimal progress information, whilst retaining all possible information 
+ for debugging and scientific evaluation.
  
 Requirements
 -----------------
@@ -73,3 +83,6 @@ While that's churning, you can follow the newly created file *ami-reduce.log* to
 To Do:
 ---------
 - Output full listings along with dataset groupings.
+
+
+.. _AMI: http://www.mrao.cam.ac.uk/telescopes/ami/
