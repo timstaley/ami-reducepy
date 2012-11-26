@@ -22,6 +22,7 @@ from environments import ami_env
 from collections import defaultdict, namedtuple
 import logging
 import astropysics.coords
+import warnings
 
 SimpleCoords = namedtuple('SimpleCoords', 'ra dec')
 
@@ -265,8 +266,15 @@ class Reduce(object):
         cal_basename = (self.files[rawfile][RawKeys.calibrator] + '-' +
                         tgt_name.split('-')[-1] + 'C.fits')
         cal_path = os.path.join(output_dir, cal_basename)
-        tgt_temp = os.path.basename(os.tempnam('./', 'ami_')) + '.fits'
-        cal_temp = os.path.basename(os.tempnam('./', 'ami_')) + '.fits'
+        
+        #Tempnam has a security warning - because someone else can write to the 
+        #file before we get around to it.
+        # Not an issue here, so we ignore it.
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            tgt_temp = os.path.basename(os.tempnam('./', 'ami_')) + '.fits'
+            cal_temp = os.path.basename(os.tempnam('./', 'ami_')) + '.fits'
+        
         self.run_command(r'write fits no no all 3-8 all %s %s \ ' %
                 (tgt_temp, cal_temp))
         self.logger.info("Renaming tempfile %s -> %s", tgt_temp, tgt_path)
