@@ -56,7 +56,7 @@ def main():
                 r.write_files(rawfile, output_dir=grp_dir)
                 info_filename = os.path.splitext(rawfile)[0]+'_info.json'
                 with open(os.path.join(grp_dir, info_filename),'w') as f:
-                    json.dump(r.files[rawfile], f)
+                    json.dump(r.files[rawfile], f, sort_keys=True, indent=4)
             except (ValueError, IOError):
                 logging.error("Hit exception reducing file: %s", rawfile)
                 continue

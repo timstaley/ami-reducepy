@@ -254,6 +254,11 @@ class Reduce(object):
             flagging = self._parse_flagging_results(output_lines)
             file_info[RawKeys.flagged_max] = max(flagging,
                                                   file_info[RawKeys.flagged_max])
+            
+        if 'reweight' in command:
+            est_noise = self._parse_reweight_results(output_lines)
+            file_info[RawKeys.est_noise] = est_noise
+            self.logger.info("Estimated noise: %s mJy", est_noise*1000.0)
                 #self.files[self.active_file][RawKeys.flagging_max]
             
 #        except Exception as e:
@@ -276,7 +281,14 @@ class Reduce(object):
                     for t in tokens:
                         if '%' in t:
                             return float(t.strip('%'))
-
+    
+    def _parse_reweight_results(self, output_lines):
+        for line in output_lines:
+            if "estimated noise" in line:
+                tokens = line.strip().split()
+                return float(tokens[-2])
+        raise ValueError("Parsing error, could not find noise estimate.")
+    
     def run_script(self, script_string):
         """Takes a script of commands, one command per line"""
         command_list = script_string.split('\n')
@@ -328,7 +340,7 @@ class Reduce(object):
         lines = self.run_command(r'show flagging no yes \ ')
         final_flagging = self._parse_flagging_results(lines)
         self.files[self.active_file][RawKeys.flagged_final] = final_flagging
-        self.logger.info("Final flagging estimate: %s", final_flagging)
+        self.logger.info("Final flagging estimate: %s%%", final_flagging)
 
 
 

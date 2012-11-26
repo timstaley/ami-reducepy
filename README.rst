@@ -72,5 +72,4 @@ While that's churning, you can follow the newly created file *ami-reduce.log* to
 
 To Do:
 ---------
-- Output detailed information for each file processed: rain, flagging, estimated noise, etc.
 - Output full listings along with dataset groupings.
