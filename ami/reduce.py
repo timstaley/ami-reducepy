@@ -17,6 +17,7 @@ the underlying fortran code, but this is a reasonably good quick solution.
 # So I often use raw strings to make it clear what is being sent. 
 
 import os
+import shutil
 import pexpect
 from environments import ami_env
 from collections import defaultdict, namedtuple
@@ -42,17 +43,20 @@ class Reduce(object):
                  array='LA',
                  log=True,
                  logdir=None,
-#                 working_dir=None
+                 working_dir=None
                  ):
-#        if working_dir is None:
-#            working_dir = os.getcwd()
-
+        if working_dir is None:
+            working_dir = ami_rootdir
+        self.working_dir = working_dir
         self.child = pexpect.spawn('tcsh -c reduce',
-#                          cwd=working_dir,
+                          cwd=self.working_dir,
                           env=ami_env(ami_rootdir))
         self.child.expect(self.prompt)
+        #Records all known information about the fileset:
         self.files = dict()
-        #Ready for action.
+        #Used for updating the relevant record in self.files, also logging:
+        self.active_file = None
+        
         if array == 'LA':
             self.switch_to_large_array()
         elif array != 'SA':
@@ -234,7 +238,31 @@ class Reduce(object):
         self.child.sendline(command)
         self.child.expect(self.prompt)
         self.file_log.debug('%s%s', self.prompt, self.child.before)
+        self._parse_command_output(command, self.child.before.split('\n'))
         return self.child.before
+    
+    def _parse_command_output(self, command, output_lines):
+#        try:
+        if 'rain' in command:
+            self._parse_rain_results(output_lines)
+#        except Exception as e:
+#            raise ValueError("Problem parsing command output for file: %s,",
+#                             "command: %s, error message:\n%s"
+#                             ,self.active_file, command, e.msg)
+            
+        
+    def _parse_rain_results(self, output_lines):
+        rain_amp_corr = None
+        for line in output_lines:
+            if "Mean amplitude correction factor" in line:
+                rain_amp_corr = float(line.strip().split()[-1])
+        if rain_amp_corr is None:
+            raise ValueError("Parsing error, could not find rain modulation.")
+        else:
+            self.files[self.active_file][RawKeys.rain] = rain_amp_corr
+            self.logger.info("Rain mean amplitude correction factor: %s", 
+                             rain_amp_corr)
+            
 
     def run_script(self, script_string):
         """Takes a script of commands, one command per line"""
@@ -249,6 +277,7 @@ class Reduce(object):
         self._setup_file_loggers(filename, file_logdir)
         self.run_command(r'file %s \ ' % filename)
         self.get_obs_details(filename)
+        self.active_file = filename
 
 
     def write_files(self, rawfile, output_dir):
@@ -266,21 +295,21 @@ class Reduce(object):
         cal_basename = (self.files[rawfile][RawKeys.calibrator] + '-' +
                         tgt_name.split('-')[-1] + 'C.fits')
         cal_path = os.path.join(output_dir, cal_basename)
-        
-        #Tempnam has a security warning - because someone else can write to the 
-        #file before we get around to it.
-        # Not an issue here, so we ignore it.
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            tgt_temp = os.path.basename(os.tempnam('./', 'ami_')) + '.fits'
-            cal_temp = os.path.basename(os.tempnam('./', 'ami_')) + '.fits'
+            tgt_temp = os.tempnam(self.working_dir, 'ami_') + '.fits'
+            cal_temp = os.tempnam(self.working_dir, 'ami_') + '.fits'
         
         self.run_command(r'write fits no no all 3-8 all %s %s \ ' %
-                (tgt_temp, cal_temp))
-        self.logger.info("Renaming tempfile %s -> %s", tgt_temp, tgt_path)
-        os.rename(tgt_temp, tgt_path)
-        self.logger.info("Renaming tempfile %s -> %s", cal_temp, cal_path)
-        os.rename(cal_temp, cal_path)
+                         (os.path.basename(tgt_temp), 
+                          os.path.basename(cal_temp)))
+                
+        self.logger.debug("Renaming tempfile %s -> %s", tgt_temp, tgt_path)
+        shutil.move(tgt_temp, tgt_path)
+        self.logger.debug("Renaming tempfile %s -> %s", cal_temp, cal_path)
+        shutil.move(cal_temp, cal_path)
+        self.logger.info("Wrote target, calib. UVFITs to:\n\t%s\n\t%s", 
+                         tgt_path, cal_path)
 
 
 

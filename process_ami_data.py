@@ -45,15 +45,24 @@ def main():
         files = groups[grp_name][GroupKeys.files]
         grp_dir = os.path.join(options.output_dir, grp_name, 'ami')
         ensure_dir(grp_dir)
+        processed_files_info = {}
         for rawfile in files:
             try:
-                logging.info("Reducing rawfile %s", rawfile)
+                logging.info("---------------------------------\n"
+                             "Reducing rawfile %s ...", rawfile)
                 r.set_active_file(rawfile, file_logdir=grp_dir)
                 r.run_script(standard_reduction_script)
                 r.write_files(rawfile, output_dir=grp_dir)
+                info_filename = os.path.splitext(rawfile)[0]+'_info.json'
+                with open(os.path.join(grp_dir, info_filename),'w') as f:
+                    json.dump(r.files[rawfile], f)
             except (ValueError, IOError):
                 logging.error("Hit exception reducing file: %s", rawfile)
                 continue
+            processed_files_info[rawfile] = r.files[rawfile]
+    
+    with open('processed_files.json', 'w') as f:
+        json.dump(processed_files_info, f, sort_keys=True, indent=4)
 
     return 0
 
@@ -93,7 +102,8 @@ def ensure_dir(dirname):
 
 def output_preamble_to_log(groups):
     logging.info("*************************")
-    logging.info("Processing:")
+    logging.info("Processing groups:\n"
+                 "--------------------------------")
     for key in sorted(groups.keys()):
         logging.info("%s:", key)
         for f in groups[key][GroupKeys.files]:
