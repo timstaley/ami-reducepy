@@ -27,7 +27,7 @@ import warnings
 
 SimpleCoords = namedtuple('SimpleCoords', 'ra dec')
 
-from keys import (RawKeys, GroupKeys)
+from keys import Keys
 
 def ensure_dir(dirname):
     if not os.path.isdir(dirname):
@@ -109,7 +109,7 @@ class Reduce(object):
             fname = cols[0]
             if fname in self.files:
                 if len(cols) > 1:
-                    self.files[fname][RawKeys.comment] = cols[1]
+                    self.files[fname][Keys.comment] = cols[1]
 
     def get_obs_details(self, filename):
         p = self.child
@@ -117,8 +117,8 @@ class Reduce(object):
         p.expect(self.prompt)
         obs_lines = p.before.split('\n')[2:]
         info = self.files[filename]
-        info[RawKeys.target_pointing] = Reduce._parse_coords(filename, obs_lines)
-        info[RawKeys.calibrator] = Reduce._parse_calibrator(obs_lines)
+        info[Keys.pointing] = Reduce._parse_coords(filename, obs_lines)
+        info[Keys.calibrator] = Reduce._parse_calibrator(obs_lines)
         return info
 
     @staticmethod
@@ -177,11 +177,11 @@ class Reduce(object):
         tolerance_deg = pointing_tolerance_in_degrees
 
         for filename, info in self.files.iteritems():
-            if info[RawKeys.target_pointing] is None:
+            if info[Keys.pointing] is None:
                 self.get_obs_details(filename)
 
         for f, info in self.files.iteritems():
-            file_pointing = info[RawKeys.target_pointing]
+            file_pointing = info[Keys.pointing]
             matched = False
             for gp in group_pointings.iterkeys():
                 # Unfortunately, FK5 class doesn't serialize well
@@ -209,8 +209,12 @@ class Reduce(object):
         for p, files in group_pointings.iteritems():
             name = sorted(files)[0].split('-')[0]
             named_groups[name] = {}
-            named_groups[name][GroupKeys.files] = files
-            named_groups[name][GroupKeys.pointing] = p
+            named_groups[name][Keys.files] = files
+            named_groups[name][Keys.pointing] = p
+            
+        for grpname, files in named_groups.iteritems():
+            for f in files:
+                self.files[f][Keys.group_name] = grpname
         return named_groups
 
     def _setup_file_loggers(self, filename, file_logdir):
@@ -247,19 +251,19 @@ class Reduce(object):
         file_info = self.files[self.active_file] 
         if 'rain' in command:
             rain_amp_corr = self._parse_rain_results(output_lines)
-            file_info[RawKeys.rain] = rain_amp_corr
+            file_info[Keys.rain] = rain_amp_corr
             self.logger.info("Rain mean amplitude correction factor: %s", 
                              rain_amp_corr)
         if 'flag' in command:
             flagging = self._parse_flagging_results(output_lines)
-            file_info[RawKeys.flagged_max] = max(flagging,
-                                                  file_info[RawKeys.flagged_max])
+            file_info[Keys.flagged_max] = max(flagging,
+                                                  file_info[Keys.flagged_max])
             
         if 'reweight' in command:
             est_noise = self._parse_reweight_results(output_lines)
-            file_info[RawKeys.est_noise] = est_noise
+            file_info[Keys.est_noise] = est_noise
             self.logger.info("Estimated noise: %s mJy", est_noise*1000.0)
-                #self.files[self.active_file][RawKeys.flagging_max]
+                #self.files[self.active_file][Keys.flagging_max]
             
 #        except Exception as e:
 #            raise ValueError("Problem parsing command output for file: %s,",
@@ -317,7 +321,7 @@ class Reduce(object):
         ensure_dir(output_dir)
         tgt_name = os.path.splitext(rawfile)[0]
         tgt_path = os.path.join(output_dir, tgt_name + '.fits')
-        cal_basename = (self.files[rawfile][RawKeys.calibrator] + '-' +
+        cal_basename = (self.files[rawfile][Keys.calibrator] + '-' +
                         tgt_name.split('-')[-1] + 'C.fits')
         cal_path = os.path.join(output_dir, cal_basename)
         with warnings.catch_warnings():
@@ -335,11 +339,14 @@ class Reduce(object):
         shutil.move(cal_temp, cal_path)
         self.logger.info("Wrote target, calib. UVFITs to:\n\t%s\n\t%s", 
                          tgt_path, cal_path)
+        info = self.files[self.active_file]
+        info[Keys.target_uvfits] = os.path.abspath(tgt_path)
+        info[Keys.cal_uvfits] = os.path.abspath(cal_path)
 
     def update_flagging_info(self):
         lines = self.run_command(r'show flagging no yes \ ')
         final_flagging = self._parse_flagging_results(lines)
-        self.files[self.active_file][RawKeys.flagged_final] = final_flagging
+        self.files[self.active_file][Keys.flagged_final] = final_flagging
         self.logger.info("Final flagging estimate: %s%%", final_flagging)
 
 

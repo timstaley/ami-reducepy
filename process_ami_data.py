@@ -7,7 +7,7 @@ import logging
 import json
 
 import ami
-from ami.keys import (GroupKeys, RawKeys)
+from ami.keys import  Keys
 
 standard_reduction_script = \
 r"""
@@ -42,7 +42,7 @@ def main():
     r = ami.Reduce(options.ami_dir, array=array, logdir=options.output_dir)
     output_preamble_to_log(groups)
     for grp_name in sorted(groups.keys()):
-        files = groups[grp_name][GroupKeys.files]
+        files = groups[grp_name][Keys.files]
         grp_dir = os.path.join(options.output_dir, grp_name, 'ami')
         ensure_dir(grp_dir)
         processed_files_info = {}
@@ -60,6 +60,7 @@ def main():
             except (ValueError, IOError):
                 logging.error("Hit exception reducing file: %s", rawfile)
                 continue
+            r.files[rawfile][Keys.group_name]=grp_name
             processed_files_info[rawfile] = r.files[rawfile]
     
     with open('processed_files.json', 'w') as f:
@@ -107,7 +108,7 @@ def output_preamble_to_log(groups):
                  "--------------------------------")
     for key in sorted(groups.keys()):
         logging.info("%s:", key)
-        for f in groups[key][GroupKeys.files]:
+        for f in groups[key][Keys.files]:
             logging.info("\t %s", f)
         logging.info("--------------------------------")
     logging.info("*************************")
