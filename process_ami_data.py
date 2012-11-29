@@ -41,11 +41,11 @@ def main():
         array, groups = json.load(open(groups_file))
     r = ami.Reduce(options.ami_dir, array=array, logdir=options.output_dir)
     output_preamble_to_log(groups)
+    processed_files_info = {}
     for grp_name in sorted(groups.keys()):
         files = groups[grp_name][Keys.files]
         grp_dir = os.path.join(options.output_dir, grp_name, 'ami')
         ensure_dir(grp_dir)
-        processed_files_info = {}
         for rawfile in files:
             try:
                 logging.info("---------------------------------\n"
