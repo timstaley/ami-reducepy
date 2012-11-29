@@ -54,15 +54,16 @@ def main():
                 r.run_script(standard_reduction_script)
                 r.update_flagging_info()
                 r.write_files(rawfile, output_dir=grp_dir)
-                info_filename = os.path.splitext(rawfile)[0]+'_info.json'
-                with open(os.path.join(grp_dir, info_filename),'w') as f:
+                info_filename = os.path.splitext(rawfile)[0] + '_info.json'
+                with open(os.path.join(grp_dir, info_filename), 'w') as f:
                     json.dump(r.files[rawfile], f, sort_keys=True, indent=4)
             except (ValueError, IOError):
                 logging.error("Hit exception reducing file: %s", rawfile)
                 continue
-            r.files[rawfile][Keys.group_name]=grp_name
+            r.files[rawfile][Keys.group_name] = grp_name
+            r.files[rawfile][Keys.obs_name] = os.path.splitext(rawfile)[0]
             processed_files_info[rawfile] = r.files[rawfile]
-    
+
     with open('processed_files.json', 'w') as f:
         json.dump(processed_files_info, f, sort_keys=True, indent=4)
 

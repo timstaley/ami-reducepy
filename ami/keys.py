@@ -10,6 +10,7 @@ class Keys:
     cal_uvfits = 'calib_uvfits'
     files = 'files'
     group_name = 'group_name'
+    obs_name = 'obs_name'
 
 
 
