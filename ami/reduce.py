@@ -57,7 +57,7 @@ class Reduce(object):
         self.files = dict()
         #Used for updating the relevant record in self.files, also logging:
         self.active_file = None
-        
+
         if array == 'LA':
             self.switch_to_large_array()
         elif array != 'SA':
@@ -211,9 +211,9 @@ class Reduce(object):
             named_groups[name] = {}
             named_groups[name][Keys.files] = files
             named_groups[name][Keys.pointing] = p
-            
-        for grpname, files in named_groups.iteritems():
-            for f in files:
+
+        for grpname, grp_info in named_groups.iteritems():
+            for f in grp_info[Keys.files]:
                 self.files[f][Keys.group_name] = grpname
         return named_groups
 
@@ -245,39 +245,39 @@ class Reduce(object):
         self.file_log.debug('%s%s', self.prompt, self.child.before)
         self._parse_command_output(command, self.child.before.split('\n'))
         return self.child.before.split('\n')
-    
+
     def _parse_command_output(self, command, output_lines):
 #        try:
-        file_info = self.files[self.active_file] 
+        file_info = self.files[self.active_file]
         if 'rain' in command:
             rain_amp_corr = self._parse_rain_results(output_lines)
             file_info[Keys.rain] = rain_amp_corr
-            self.logger.info("Rain mean amplitude correction factor: %s", 
+            self.logger.info("Rain mean amplitude correction factor: %s",
                              rain_amp_corr)
         if 'flag' in command:
             flagging = self._parse_flagging_results(output_lines)
             file_info[Keys.flagged_max] = max(flagging,
                                                   file_info[Keys.flagged_max])
-            
+
         if 'reweight' in command:
             est_noise = self._parse_reweight_results(output_lines)
             file_info[Keys.est_noise] = est_noise
-            self.logger.info("Estimated noise: %s mJy", est_noise*1000.0)
+            self.logger.info("Estimated noise: %s mJy", est_noise * 1000.0)
                 #self.files[self.active_file][Keys.flagging_max]
-            
+
 #        except Exception as e:
 #            raise ValueError("Problem parsing command output for file: %s,",
 #                             "command: %s, error message:\n%s"
 #                             ,self.active_file, command, e.msg)
-            
-        
+
+
     def _parse_rain_results(self, output_lines):
         for line in output_lines:
             if "Mean amplitude correction factor" in line:
                 return float(line.strip().split()[-1])
         raise ValueError("Parsing error, could not find rain modulation.")
 
-    def _parse_flagging_results(self,output_lines):
+    def _parse_flagging_results(self, output_lines):
         for line in output_lines:
             if "samples flagged" in line:
                 if "Total of" in line:
@@ -285,14 +285,14 @@ class Reduce(object):
                     for t in tokens:
                         if '%' in t:
                             return float(t.strip('%'))
-    
+
     def _parse_reweight_results(self, output_lines):
         for line in output_lines:
             if "estimated noise" in line:
                 tokens = line.strip().split()
                 return float(tokens[-2])
         raise ValueError("Parsing error, could not find noise estimate.")
-    
+
     def run_script(self, script_string):
         """Takes a script of commands, one command per line"""
         command_list = script_string.split('\n')
@@ -328,16 +328,16 @@ class Reduce(object):
             warnings.simplefilter("ignore")
             tgt_temp = os.tempnam(self.working_dir, 'ami_') + '.fits'
             cal_temp = os.tempnam(self.working_dir, 'ami_') + '.fits'
-        
+
         self.run_command(r'write fits no no all 3-8 all %s %s \ ' %
-                         (os.path.basename(tgt_temp), 
+                         (os.path.basename(tgt_temp),
                           os.path.basename(cal_temp)))
-                
+
         self.logger.debug("Renaming tempfile %s -> %s", tgt_temp, tgt_path)
         shutil.move(tgt_temp, tgt_path)
         self.logger.debug("Renaming tempfile %s -> %s", cal_temp, cal_path)
         shutil.move(cal_temp, cal_path)
-        self.logger.info("Wrote target, calib. UVFITs to:\n\t%s\n\t%s", 
+        self.logger.info("Wrote target, calib. UVFITs to:\n\t%s\n\t%s",
                          tgt_path, cal_path)
         info = self.files[self.active_file]
         info[Keys.target_uvfits] = os.path.abspath(tgt_path)
