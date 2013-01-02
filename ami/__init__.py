@@ -12,7 +12,7 @@ def ensure_dir(dirname):
 
 def output_preamble_to_log(data_groups):
     logging.info("*************************")
-    logging.info("Processing data_groups:\n"
+    logging.info("Processing with AMI reduce:\n"
                  "--------------------------------")
     for key in sorted(data_groups.keys()):
         logging.info("%s:", key)
