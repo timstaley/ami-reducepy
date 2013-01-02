@@ -35,16 +35,19 @@ scan dat field yes \
 show flagging no yes \
 """
 
-def main():
-    options, groups_file = handle_args(sys.argv[1:])
-    if groups_file:
-        array, groups = json.load(open(groups_file))
-    r = ami.Reduce(options.ami_dir, array=array, logdir=options.output_dir)
-    output_preamble_to_log(groups)
+def main(data_groups, output_dir, ami_dir, array='LA'):
+    """Args:
+    data_groups: Dictionary mapping groupname -> list of raw filenames
+    output_dir: Folder where dataset group subfolders will be created.
+    ami_dir: Top dir of the AMI ``reduce`` installation.
+    array: 'LA' or 'SA' (Default: LA)
+    """
+    r = ami.Reduce(ami_dir, array=array, logdir=output_dir)
+    output_preamble_to_log(data_groups)
     processed_files_info = {}
-    for grp_name in sorted(groups.keys()):
-        files = groups[grp_name][Keys.files]
-        grp_dir = os.path.join(options.output_dir, grp_name, 'ami')
+    for grp_name in sorted(data_groups.keys()):
+        files = data_groups[grp_name][Keys.files]
+        grp_dir = os.path.join(output_dir, grp_name, 'ami')
         ensure_dir(grp_dir)
         for rawfile in files:
             try:
@@ -64,13 +67,10 @@ def main():
             r.files[rawfile][Keys.obs_name] = os.path.splitext(rawfile)[0]
             processed_files_info[rawfile] = r.files[rawfile]
 
-    with open('processed_files.json', 'w') as f:
-        json.dump(processed_files_info, f, sort_keys=True, indent=4)
-
-    return 0
+    return processed_files_info
 
 
-def handle_args(argv):
+def handle_args():
     """
     Default values are defined here.
     """
@@ -90,7 +90,7 @@ def handle_args(argv):
     parser.add_option("--ami-dir", default=default_ami_dir,
                        help="Path to AMI directory, default: " + default_ami_dir)
 
-    options, args = parser.parse_args(argv)
+    options, args = parser.parse_args()
     options.ami_dir = os.path.expanduser(options.ami_dir)
     options.output_dir = os.path.expanduser(options.output_dir)
     if len(args) != 1:
@@ -103,13 +103,13 @@ def ensure_dir(dirname):
     if not os.path.isdir(dirname):
         os.makedirs(dirname)
 
-def output_preamble_to_log(groups):
+def output_preamble_to_log(data_groups):
     logging.info("*************************")
-    logging.info("Processing groups:\n"
+    logging.info("Processing data_groups:\n"
                  "--------------------------------")
-    for key in sorted(groups.keys()):
+    for key in sorted(data_groups.keys()):
         logging.info("%s:", key)
-        for f in groups[key][Keys.files]:
+        for f in data_groups[key][Keys.files]:
             logging.info("\t %s", f)
         logging.info("--------------------------------")
     logging.info("*************************")
@@ -125,4 +125,14 @@ if __name__ == "__main__":
     log_stdout = logging.StreamHandler(sys.stdout)
     log_stdout.setLevel(logging.INFO)
     logger.addHandler(log_stdout)
-    sys.exit(main())
+
+    options, groups_file = handle_args()
+    if groups_file:
+        array, data_groups = json.load(open(groups_file))
+    processed_files_info = main(data_groups,
+                                options.output_dir,
+                                options.ami_dir,
+                                array=array)
+    with open('processed_files.json', 'w') as f:
+        json.dump(processed_files_info, f, sort_keys=True, indent=4)
+    sys.exit(0)
