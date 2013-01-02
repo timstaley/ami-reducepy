@@ -69,6 +69,20 @@ def main(data_groups, output_dir, ami_dir, array='LA'):
 
     return processed_files_info
 
+def ensure_dir(dirname):
+    if not os.path.isdir(dirname):
+        os.makedirs(dirname)
+
+def output_preamble_to_log(data_groups):
+    logging.info("*************************")
+    logging.info("Processing data_groups:\n"
+                 "--------------------------------")
+    for key in sorted(data_groups.keys()):
+        logging.info("%s:", key)
+        for f in data_groups[key][Keys.files]:
+            logging.info("\t %s", f)
+        logging.info("--------------------------------")
+    logging.info("*************************")
 
 def handle_args():
     """
@@ -98,22 +112,6 @@ def handle_args():
         sys.exit(1)
     print "Reducing files listed in:", args[0]
     return options, args[0]
-
-def ensure_dir(dirname):
-    if not os.path.isdir(dirname):
-        os.makedirs(dirname)
-
-def output_preamble_to_log(data_groups):
-    logging.info("*************************")
-    logging.info("Processing data_groups:\n"
-                 "--------------------------------")
-    for key in sorted(data_groups.keys()):
-        logging.info("%s:", key)
-        for f in data_groups[key][Keys.files]:
-            logging.info("\t %s", f)
-        logging.info("--------------------------------")
-    logging.info("*************************")
-
 
 
 if __name__ == "__main__":
