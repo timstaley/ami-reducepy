@@ -6,20 +6,22 @@ from ami.reduce import Reduce
 from ami.keys import Keys
 import ami.scripts as scripts
 
+logger = logging.getLogger('ami')
+
 def ensure_dir(dirname):
     if not os.path.isdir(dirname):
         os.makedirs(dirname)
 
 def output_preamble_to_log(data_groups):
-    logging.info("*************************")
-    logging.info("Processing with AMI reduce:\n"
+    logger.info("*************************")
+    logger.info("Processing with AMI reduce:\n"
                  "--------------------------------")
     for key in sorted(data_groups.keys()):
-        logging.info("%s:", key)
+        logger.info("%s:", key)
         for f in data_groups[key][Keys.files]:
-            logging.info("\t %s", f)
-        logging.info("--------------------------------")
-    logging.info("*************************")
+            logger.info("\t %s", f)
+        logger.info("--------------------------------")
+    logger.info("*************************")
 
 def process_data_groups(data_groups, output_dir, ami_dir,
                         array='LA',
@@ -39,7 +41,7 @@ def process_data_groups(data_groups, output_dir, ami_dir,
         ensure_dir(grp_dir)
         for rawfile in files:
             try:
-                logging.info("---------------------------------\n"
+                logger.info("---------------------------------\n"
                              "Reducing rawfile %s ...", rawfile)
                 r.set_active_file(rawfile, file_logdir=grp_dir)
                 r.run_script(script)
@@ -49,7 +51,7 @@ def process_data_groups(data_groups, output_dir, ami_dir,
                 with open(os.path.join(grp_dir, info_filename), 'w') as f:
                     json.dump(r.files[rawfile], f, sort_keys=True, indent=4)
             except (ValueError, IOError):
-                logging.error("Hit exception reducing file: %s", rawfile)
+                logger.error("Hit exception reducing file: %s", rawfile)
                 continue
             r.files[rawfile][Keys.group_name] = grp_name
             r.files[rawfile][Keys.obs_name] = os.path.splitext(rawfile)[0]

@@ -29,6 +29,8 @@ SimpleCoords = namedtuple('SimpleCoords', 'ra dec')
 
 from keys import Keys
 
+reduce_logger_name = 'ami.reduce'
+
 def ensure_dir(dirname):
     if not os.path.isdir(dirname):
         os.makedirs(dirname)
@@ -69,7 +71,7 @@ class Reduce(object):
             self.logdir = logdir
             if self.logdir is None:
                 self.logdir = ''
-            self.logger = logging.getLogger('ami')
+            self.logger = logging.getLogger(reduce_logger_name)
             self.file_log = None
             self.file_cmd_log = None
 
@@ -224,15 +226,17 @@ class Reduce(object):
 
             ensure_dir(file_logdir)
             name = os.path.splitext(filename)[0]
-            self.file_log = logging.getLogger('ami.' + name)
-            self.file_log.setLevel(logging.DEBUG)
+            self.file_log = logging.getLogger('.'.join((reduce_logger_name, name)))
+#            self.file_log.setLevel(logging.DEBUG)
             fh = logging.FileHandler(
                          os.path.join(file_logdir, name + '.ami.log'),
                          mode='w')
             self.file_log.addHandler(fh)
 
-            self.file_cmd_log = logging.getLogger('ami.commands.' + name)
-            self.file_cmd_log.setLevel(logging.DEBUG)
+            self.file_cmd_log = logging.getLogger(
+                                  '.'.join((reduce_logger_name, 'commands', name)))
+
+#            self.file_cmd_log.setLevel(logging.DEBUG)
             fh = logging.FileHandler(
                          os.path.join(file_logdir, name + '.ami.commands'),
                          mode='w')
