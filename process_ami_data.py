@@ -57,7 +57,7 @@ def process_data_groups(data_groups, output_dir, ami_dir,
     ami_dir: Top dir of the AMI ``reduce`` installation.
     array: 'LA' or 'SA' (Default: LA)
     """
-    r = ami.Reduce(ami_dir, array=array, logdir=output_dir)
+    r = ami.Reduce(ami_dir, array=array)
     processed_files_info = {}
     for grp_name in sorted(data_groups.keys()):
         files = data_groups[grp_name][ami.keys.files]
@@ -73,8 +73,8 @@ def process_data_groups(data_groups, output_dir, ami_dir,
                 logger.error("Hit exception reducing file: %s", rawfile)
                 continue
             #Also save the group assignment in the listings: 
-            file_info[rawfile][ami.keys.group_name] = grp_name
-            processed_files_info.update(file_info)
+            file_info[ami.keys.group_name] = grp_name
+            processed_files_info[rawfile] = file_info
     return processed_files_info
 
 if __name__ == "__main__":

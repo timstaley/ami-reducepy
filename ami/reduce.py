@@ -43,9 +43,7 @@ class Reduce(object):
     def __init__(self,
                  ami_rootdir,
                  array='LA',
-                 log=True,
-                 logdir=None,
-                 working_dir=None
+                 working_dir='/tmp'
                  ):
         if working_dir is None:
             working_dir = ami_rootdir
@@ -65,18 +63,7 @@ class Reduce(object):
         elif array != 'SA':
             raise ValueError("Initialisation error: Array must be 'LA' or 'SA'.")
         self.array = array
-
         self.update_files()
-        if log:
-#            self.logger = logging.getLogger(reduce_logger_name)
-            self.logdir = logdir
-            if self.logdir is None:
-                self.logdir = ''
-            self.file_log = None
-            self.file_cmd_log = None
-#
-#        else:
-#            self.logger = None
 
     def switch_to_large_array(self):
         """NB resets file list"""

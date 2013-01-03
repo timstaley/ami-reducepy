@@ -26,7 +26,7 @@ def process_rawfile(rawfile, output_dir,
     script: Reduction commands.
 
     Returns:
-        - A nested dictionary containing information about the rawfile,
+        - A dictionary containing information about the rawfile,
           e.g. pointing, calibrator name, rain modulation.
           See also: ``ami.keys``
     """
@@ -43,4 +43,4 @@ def process_rawfile(rawfile, output_dir,
     with open(os.path.join(output_dir, info_filename), 'w') as f:
         json.dump(r.files[rawfile], f, sort_keys=True, indent=4)
     r.files[rawfile][keys.obs_name] = os.path.splitext(rawfile)[0]
-    return {rawfile: r.files[rawfile]}
+    return r.files[rawfile]
