@@ -45,6 +45,9 @@ class Reduce(object):
                  array='LA',
                  working_dir='/tmp'
                  ):
+        if len(ami_rootdir) > 16:
+            warnings.warn("Long AMI root path detected - this may cause bugs!\n"
+                          "It is recommended to use a short symlink instead.\n")
         if working_dir is None:
             working_dir = ami_rootdir
         self.working_dir = working_dir
