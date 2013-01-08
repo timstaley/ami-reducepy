@@ -212,12 +212,16 @@ class Reduce(object):
     def _setup_file_loggers(self, filename, file_logdir):
 #        if (self.logger is not None) or (file_logdir is not None):
         target = os.path.splitext(filename)[0]
-
+        #It does no harm to set up the loggers,
+        #irrespective of whether we write them to file-
+        #The calling code could potentially grab them for other uses.
         self.file_log = logging.getLogger('.'.join((logger.name, target)))
         self.file_log.propagate = False
+        self.file_log.setLevel(logging.DEBUG)
         self.file_cmd_log = logging.getLogger(
                               '.'.join((logger.name, 'commands', target)))
         self.file_cmd_log.propagate = False
+        self.file_cmd_log.setLevel(logging.DEBUG)
 
         if file_logdir is not None:
             ensure_dir(file_logdir)
