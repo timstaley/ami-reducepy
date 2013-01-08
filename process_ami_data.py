@@ -69,8 +69,10 @@ def process_data_groups(data_groups, output_dir, ami_dir,
                 file_info = ami.process_rawfile(rawfile,
                                     output_dir=grp_dir,
                                     reduce=r)
-            except (ValueError, IOError):
-                logger.error("Hit exception reducing file: %s", rawfile)
+            except (ValueError, IOError) as e:
+                logger.error("Hit exception reducing file: %s\n"
+                             "Exception reads:\n%s\n",
+                             rawfile, e)
                 continue
             #Also save the group assignment in the listings: 
             file_info[ami.keys.group_name] = grp_name
