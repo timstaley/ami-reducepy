@@ -1,10 +1,10 @@
-===============
+============
 ami-reducepy
-===============
+============
 A python package for scripting the AMI_-reduce pipeline.
 
 Rationale
------------
+---------
 From a radio astronomy point of view:
  This package makes it trivial to script reduction of raw AMI data
  from python. What's more, it provides tools to group the raw files into 
@@ -41,21 +41,33 @@ From a software engineering point of view:
  minimal progress information, whilst retaining all possible information 
  for debugging and scientific evaluation.
  
-Requirements
------------------
- - A working installation of AMI-reduce (naturally)
- - `pexpect <http://pypi.python.org/pypi/pexpect/>`_ (Install with e.g ``sudo apt-get install python-pexpect``)
- - `astropysics <http://packages.python.org/Astropysics/>`_ (Install with e.g. ``pip install astropysics --user``) - this is used for calculating co-ordinate distances, etc.
+Installation
+------------
+
+*Requirements*:
+ - You will need a working installation of AMI-reduce (naturally)
+ - `pexpect <http://pypi.python.org/pypi/pexpect/>`_ For interfacing with AMI-reduce.
+   (Installed automatically as part of the python setup.) 
+ - `astropysics <http://packages.python.org/Astropysics/>`_ Used for calculating
+   co-ordinate distances, etc.
+   (Installed automatically as part of the python setup.)
+   
+From the command line (preferably within a virtualenv):: 
+
+ git clone git://github.com/timstaley/ami-reducepy.git
+ cd ami-reducepy
+ pip install .
 
 Usage
------------------
+-----
 The class ``ami.Reduce`` provides an easily scriptable interface to the ``reduce`` pipeline.
 At this stage I haven't documented it, but in the meantime you can get started 
 with the example scripts described below. 
 (Of course at <500 lines, the source code is pretty easy to dive into and get aquainted with).
 
 First try ``./list_ami_datasets.py --help`` to see your options. 
-Unless you edit the defaults in the script, or happen to have an ami installation under */opt/ami*, then you will probably want to run::
+Unless you edit the defaults in the script, or happen to have an ami installation 
+under */opt/ami*, then you will probably want to run::
 
  ./list_ami_datasets.py --ami-dir=/path/to/ami
 
@@ -79,7 +91,7 @@ After a careful inspection, you'll probably want to try something like::
 While that's churning, you can follow the newly created file *ami-reduce.log* to get the full input / output stream being passed to ``reduce``, with some additional comments here and there. Per-file logs will also be created alongside the output UVFITS files.
 
 To Do:
----------
+------
 - Output full listings along with dataset groupings.
 
 
