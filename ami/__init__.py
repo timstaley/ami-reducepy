@@ -39,8 +39,8 @@ def process_rawfile(rawfile, output_dir,
     r.run_script(script)
     r.update_flagging_info()
     r.write_files(rawfile, output_dir)
+    r.files[rawfile][keys.obs_name] = os.path.splitext(rawfile)[0]
     info_filename = os.path.splitext(rawfile)[0] + '_info.json'
     with open(os.path.join(output_dir, info_filename), 'w') as f:
         json.dump(r.files[rawfile], f, sort_keys=True, indent=4)
-    r.files[rawfile][keys.obs_name] = os.path.splitext(rawfile)[0]
     return r.files[rawfile]
