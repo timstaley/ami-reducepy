@@ -56,6 +56,7 @@ From the command line (preferably within a virtualenv)::
 
  git clone git://github.com/timstaley/ami-reducepy.git
  cd ami-reducepy
+ pip install numpy #Workaround for buggy scipy/numpy combined install.
  pip install .
 
 Usage
