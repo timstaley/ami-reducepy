@@ -1,5 +1,5 @@
 ===============
-ami-reduce
+ami-reducepy
 ===============
 A python package for scripting the AMI_-reduce pipeline.
 

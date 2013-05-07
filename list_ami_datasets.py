@@ -1,4 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+
 """
 Groups AMI datasets by pointing direction,
 then dumps them in JSON format.
