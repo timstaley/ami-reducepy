@@ -8,10 +8,10 @@ subtract means \
 update pcal \
 fft \
 frotate forward y n \
-flag amp all all field yes 1 \
+flag amp field yes no 1 \
 apply rain \
-flag amp all all field no 0.432 1 \
-flag amp all all field no 0.1 20 \
+flag amp field no 0.432 1 \
+flag amp field no 0.1 20 \
 frotate forward n y \
 cal inter \
 reweight \
