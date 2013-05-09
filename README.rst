@@ -77,7 +77,7 @@ with the example scripts described below.
 
 First try::
 
- ``./list_ami_datasets.py --help`` 
+ ./list_ami_datasets.py --help
 
 to see your options. 
 Unless you edit the defaults in the script, or happen to have an ami installation 
