@@ -61,12 +61,25 @@ From the command line (preferably within a virtualenv)::
 
 Usage
 -----
+*Quickstart*
+
+The script 'process_ami_data' can be used for easy reduction of multiple files.
+Try::
+
+ ./process_ami_data.py --help
+
+*Details*
+
 The class ``ami.Reduce`` provides an easily scriptable interface to the ``reduce`` pipeline.
 At this stage I haven't documented it, but in the meantime you can get started 
-with the example scripts described below. 
+with the example scripts described below.
 (Of course at <500 lines, the source code is pretty easy to dive into and get aquainted with).
 
-First try ``./list_ami_datasets.py --help`` to see your options. 
+First try::
+
+ ``./list_ami_datasets.py --help`` 
+
+to see your options. 
 Unless you edit the defaults in the script, or happen to have an ami installation 
 under */opt/ami*, then you will probably want to run::
 
@@ -79,21 +92,22 @@ representing the array type ('LA' or 'SA'),
 and after that comes a nested dictionary representing the dataset file groups.
 You should copy this file to e.g. *files_to_process.json* and then 
 edit the nested dictionaries to leave just the files you wish to process.
-Note that the key to each top-level dictionary entry represents the group name - 
-by default this is guessed from the file names, 
+Note that the key to each dictionary entry represents the group name, 
+which will be used to create subfolders to group your results together. 
+By default ``list_ami_datasets`` guesses the groupname from the file names, 
 but you can change it to whatever you like.
-`Be careful to match your brackets and mind your commas!`
+`When editing a JSON file, be careful to match your brackets and mind your commas!`
 
 Now you have a target list, try ``./process_ami_data.py --help``.
 After a careful inspection, you'll probably want to try something like::
 
  ./process_ami_data.py --ami-dir=/path/to/ami  files_to_process.json
 
-While that's churning, you can follow the newly created file *ami-reduce.log* to get the full input / output stream being passed to ``reduce``, with some additional comments here and there. Per-file logs will also be created alongside the output UVFITS files.
+While that's churning, you can follow the newly created file ``ami-reduce.log``.
+Per-file logs will also be created alongside the output UVFITS files.
 
 To Do:
 ------
 - Output full listings along with dataset groupings.
-
 
 .. _AMI: http://www.mrao.cam.ac.uk/telescopes/ami/
