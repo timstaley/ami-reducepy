@@ -1,5 +1,6 @@
 standard_reduction = \
 r"""
+version
 flag all
 flag int \
 subtract modmeans \
@@ -10,8 +11,8 @@ fft \
 frotate forward y n \
 flag amp field yes no 1 \
 apply rain \
-flag amp field no 0.432 1 \
-flag amp field no 0.1 20 \
+flag amp field no 1.0 1 \
+flag amp field no 0.225 20 \
 frotate forward n y \
 cal inter \
 reweight \
