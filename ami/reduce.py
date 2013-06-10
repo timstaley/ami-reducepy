@@ -24,8 +24,9 @@ from collections import defaultdict, namedtuple
 import logging
 import astropysics.coords
 import warnings
+import datetime
 
-SimpleCoords = namedtuple('SimpleCoords', 'ra dec')
+RaDecPair = namedtuple('RaDecPair', 'ra dec')
 
 import keys
 
@@ -55,8 +56,10 @@ class Reduce(object):
                           cwd=self.working_dir,
                           env=ami_env(ami_rootdir))
         self.child.expect(self.prompt)
-        #Records all known information about the fileset,
-        #Each file entry is initially a ``defaultdict(lambda : None)``
+        #Records all known information about the fileset.
+        #Each file entry is initialised to a ``defaultdict(lambda : None)``
+        #So if we attempt to access an unknown file attribute we get a sensible
+        #answer rather than an exception.
         self.files = dict()
         #Used for updating the relevant record in self.files, also logging:
         self.active_file = None
@@ -109,8 +112,12 @@ class Reduce(object):
         p.expect(self.prompt)
         obs_lines = p.before.split('\n')[2:]
         info = self.files[filename]
-        info[keys.pointing] = Reduce._parse_coords(filename, obs_lines)
+
+        hms_dms = Reduce._parse_coords(filename, obs_lines)
+        info[keys.pointing_hms_dms] = hms_dms
+        info[keys.pointing_fk5] = Reduce._convert_to_ap_FK5_coords(hms_dms)
         info[keys.calibrator] = Reduce._parse_calibrator(obs_lines)
+        info.update(Reduce._parse_obs_datetime(obs_lines))
         return info
 
     @staticmethod
@@ -119,6 +126,40 @@ class Reduce(object):
             if 'with calibrator' in line:
                 tokens = line.split()
                 return tokens[-1]
+
+    @staticmethod
+    def _parse_times(line):
+        """Returns (UTC time, sidereal time)"""
+        tokens = line.split()
+        format = '%H.%M.%S'
+        ut = datetime.datetime.strptime(tokens[3], format).time()
+        st = tokens[5].replace('.', ':')
+        mjd = float(tokens[-2])
+        return ut, st, mjd
+
+    @staticmethod
+    def _parse_obs_datetime(obs_listing):
+        timeinfo = {}
+        for idx, line in enumerate(obs_listing):
+            if 'Tracking ' in line:
+                date_str = obs_listing[idx + 1].split()[-1]
+                d0 = datetime.datetime.strptime(date_str, '%d/%m/%Y')
+            if 'Start time' in line:
+                ut0, st0, mjd0 = Reduce._parse_times(line)
+            if 'Stop time' in line:
+                ut1, st1, mjd1 = Reduce._parse_times(line)
+
+        timeinfo[keys.time_st] = (st0, st1)
+        timeinfo[keys.time_mjd] = (mjd0, mjd1)
+        d0 = datetime.datetime.combine(d0, ut0)
+        d1 = datetime.datetime.combine(d0, ut1)
+        if d1 < d0: #Crossed midnight
+            d1 = d1 + datetime.timedelta(days=1)
+        timeinfo[keys.time_ut] = (d0, d1)
+        duration = d1 - d0
+        timeinfo[keys.duration] = duration.total_seconds() / 3600.
+        return timeinfo
+
 
     @staticmethod
     def _parse_coords(filename, obs_listing):
@@ -136,18 +177,23 @@ class Reduce(object):
                     ra_dec = coords_str.split('  ')
                 else:
                     ra_dec = coords_str.split('   ')
-                pointing = SimpleCoords(ra_dec[0], ra_dec[1])
+                pointing = RaDecPair(ra_dec[0].replace(' ', ':'),
+                                     ra_dec[1].replace(' ', ':'))
                 return pointing
         raise ValueError("Parsing error for file: %s, coords not found"
                             % filename)
 
     @staticmethod
-    def _convert_to_ap_FK5_coords(simplecoords):
-        ra = astropysics.coords.AngularCoordinate(
-              simplecoords.ra.replace(' ', ':'), sghms=True)
-        dec = astropysics.coords.AngularCoordinate(
-              simplecoords.dec.replace(' ', ':'), sghms=False)
+    def _convert_to_ap_FK5_coords(hms_dms_pair):
+        """
+        Args:
 
+          - a tuple-pair of ('h:m:s','d:m:s') strings representing ra/dec
+        """
+        ra = astropysics.coords.AngularCoordinate(
+              hms_dms_pair.ra, sghms=True)
+        dec = astropysics.coords.AngularCoordinate(
+              hms_dms_pair.dec, sghms=False)
         return astropysics.coords.FK5Coordinates(ra, dec)
 
 
@@ -169,19 +215,14 @@ class Reduce(object):
         tolerance_deg = pointing_tolerance_in_degrees
 
         for filename, info in self.files.iteritems():
-            if info[keys.pointing] is None:
+            if info[keys.pointing_fk5] is None:
                 self.get_obs_details(filename)
 
         for f, info in self.files.iteritems():
-            file_pointing = info[keys.pointing]
+            file_pointing = info[keys.pointing_fk5]
             matched = False
             for gp in group_pointings.iterkeys():
-                # Unfortunately, FK5 class doesn't serialize well
-                # So we only use them as tempvars for easy comparison,
-                # Rather than storing in the datadump.
-                p0 = Reduce._convert_to_ap_FK5_coords(gp)
-                p1 = Reduce._convert_to_ap_FK5_coords(file_pointing)
-                if (p0 - p1).degrees < tolerance_deg:
+                if (gp - file_pointing).degrees < tolerance_deg:
                     group_pointings[gp].append(f)
                     matched = True
 #                    print "MATCH", f
@@ -202,11 +243,14 @@ class Reduce(object):
             name = sorted(files)[0].split('-')[0]
             named_groups[name] = {}
             named_groups[name][keys.files] = files
-            named_groups[name][keys.pointing] = p
+            #Also convert FK5coordinates into something JSON friendly:
+            named_groups[name][keys.pointing_fk5] = RaDecPair(p.ra.d, p.dec.d)
 
         for grpname, grp_info in named_groups.iteritems():
             for f in grp_info[keys.files]:
                 self.files[f][keys.group_name] = grpname
+                fk5 = self.files[f][keys.pointing_fk5]
+                self.files[f][keys.pointing_fk5] = RaDecPair(fk5.ra.d, fk5.dec.d)
         return named_groups
 
     def _setup_file_loggers(self, filename, file_logdir):
@@ -261,7 +305,7 @@ class Reduce(object):
 
         if 'reweight' in command:
             est_noise = self._parse_reweight_results(output_lines)
-            file_info[keys.est_noise] = est_noise
+            file_info[keys.est_noise_mjy] = est_noise * 1000.0
 #            logger.info("Estimated noise: %s mJy", est_noise * 1000.0)
                 #self.files[self.active_file][keys.flagging_max]
 
@@ -348,8 +392,3 @@ class Reduce(object):
         final_flagging = self._parse_flagging_results(lines)
         self.files[self.active_file][keys.flagged_final] = final_flagging
 #        logger.info("Final flagging estimate: %s%%", final_flagging)
-
-
-
-
-

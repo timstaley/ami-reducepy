@@ -2,17 +2,31 @@ from __future__ import absolute_import
 import logging
 import os
 import json
+import ami.reduce as reduce
 from ami.reduce import Reduce
 import ami.keys as keys
 import ami.scripts as scripts
 
 logger = logging.getLogger('ami')
 
+datetime_format = '%Y-%m-%d %H:%M:%S'
+
 def ensure_dir(dirname):
     if not os.path.isdir(dirname):
         os.makedirs(dirname)
 
+def make_serializable(file_info_dict):
+    """Returns a JSON serializable version of a file info dictionary.
 
+    E.g. the dict returned by the `process_rawfile` routine.
+    """
+    d = file_info_dict.copy()
+    #Pointing FK5:
+    c = d[keys.pointing_fk5]
+    d[keys.pointing_fk5] = reduce.RaDecPair(c.ra.degrees, c.dec.degrees)
+    #UTC datetime
+    d[keys.time_ut] = [t.strftime(datetime_format) for t in d[keys.time_ut]]
+    return d
 
 def process_rawfile(rawfile, output_dir,
                     reduce,
@@ -40,7 +54,8 @@ def process_rawfile(rawfile, output_dir,
     r.update_flagging_info()
     r.write_files(rawfile, output_dir)
     r.files[rawfile][keys.obs_name] = os.path.splitext(rawfile)[0]
-    info_filename = os.path.splitext(rawfile)[0] + '_info.json'
+    info_filename = os.path.splitext(rawfile)[0] + '.json'
     with open(os.path.join(output_dir, info_filename), 'w') as f:
-        json.dump(r.files[rawfile], f, sort_keys=True, indent=4)
+        json.dump(make_serializable(r.files[rawfile]), f,
+                  sort_keys=True, indent=4)
     return r.files[rawfile]

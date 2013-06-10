@@ -7,7 +7,7 @@ with open('requirements.txt') as f:
 
 setup(
     name="ami-reducepy",
-    version="0.1.1",
+    version="0.1.2",
     packages=['ami'],
     description="A python package for scripting the AMI-reduce pipeline.",
     author="Tim Staley",

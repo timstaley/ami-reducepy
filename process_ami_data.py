@@ -96,7 +96,7 @@ def process_data_groups(data_groups, output_dir, ami_dir,
                 continue
             #Also save the group assignment in the listings: 
             file_info[ami.keys.group_name] = grp_name
-            processed_files_info[rawfile] = file_info
+            processed_files_info[rawfile] = ami.make_serializable(file_info)
     return processed_files_info
 
 if __name__ == "__main__":
