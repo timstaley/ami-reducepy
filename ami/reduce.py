@@ -7,14 +7,14 @@ NB It may be possible to do this more directly by writing python wrappers about
 the underlying fortran code, but this is a reasonably good quick solution.
 """
 
-## NB I have adopted the convention that each function leaves the 
-## spawned instance in a 'ready to receive' state.
-## So the last call should usually be to 'expect(blah)'
+# NB I have adopted the convention that each function leaves the
+# spawned instance in a 'ready to receive' state.
+# So the last call should usually be to 'expect(blah)'
 
-## Calls to ami often finish with a '\' (backslash), 
-# which means 'use defaults'. 
+# Calls to ami often finish with a '\' (backslash),
+# which means 'use defaults'.
 # Unfortunately, this is also the python string escape character.
-# So I often use raw strings to make it clear what is being sent. 
+# So I often use raw strings to make it clear what is being sent.
 
 import os
 import shutil
@@ -51,17 +51,20 @@ class Reduce(object):
                           "It is recommended to use a short symlink instead.\n")
         if working_dir is None:
             working_dir = ami_rootdir
+        if not os.access(os.path.join(ami_rootdir, 'bin', 'reduce'), os.R_OK):
+            raise IOError("Cannot access ami-reduce binary at: " +
+                               os.path.join(ami_rootdir, 'bin', 'reduce'))
         self.working_dir = working_dir
         self.child = pexpect.spawn('tcsh -c reduce',
                           cwd=self.working_dir,
                           env=ami_env(ami_rootdir))
         self.child.expect(self.prompt)
-        #Records all known information about the fileset.
-        #Each file entry is initialised to a ``defaultdict(lambda : None)``
-        #So if we attempt to access an unknown file attribute we get a sensible
-        #answer rather than an exception.
+        # Records all known information about the fileset.
+        # Each file entry is initialised to a ``defaultdict(lambda : None)``
+        # So if we attempt to access an unknown file attribute we get a sensible
+        # answer rather than an exception.
         self.files = dict()
-        #Used for updating the relevant record in self.files, also logging:
+        # Used for updating the relevant record in self.files, also logging:
         self.active_file = None
 
         if array == 'LA':
@@ -83,9 +86,9 @@ class Reduce(object):
         p.sendline(r'list files \ ')
 #        p.sendline(r'list comment \ ')
         p.expect(self.prompt)
-        #First line in 'before' is command.
-        #second line is blank
-        #last 4 lines are blanks and 'total obs time'
+        # First line in 'before' is command.
+        # second line is blank
+        # last 4 lines are blanks and 'total obs time'
         file_lines = p.before.split('\n')[2:-4]
         for l in file_lines:
             l = l.strip('\r').strip(' ')
@@ -153,7 +156,7 @@ class Reduce(object):
         timeinfo[keys.time_mjd] = (mjd0, mjd1)
         d0 = datetime.datetime.combine(d0, ut0)
         d1 = datetime.datetime.combine(d0, ut1)
-        if d1 < d0: #Crossed midnight
+        if d1 < d0:  # Crossed midnight
             d1 = d1 + datetime.timedelta(days=1)
         timeinfo[keys.time_ut] = (d0, d1)
         duration = d1 - d0
@@ -172,7 +175,7 @@ class Reduce(object):
                 coords_str = line[len('Tracking    : '):]
                 coords_str = coords_str.strip()
                 coords_str = coords_str[:-len('J2000')].strip()
-                #Two cases depending whether declination is +ve or -ve:
+                # Two cases depending whether declination is +ve or -ve:
                 if '-' in coords_str:
                     ra_dec = coords_str.split('  ')
                 else:
@@ -211,7 +214,7 @@ class Reduce(object):
             ...
         }
         """
-        group_pointings = defaultdict(list) #Dict, pointing --> Files
+        group_pointings = defaultdict(list)  # Dict, pointing --> Files
         tolerance_deg = pointing_tolerance_in_degrees
 
         for filename, info in self.files.iteritems():
@@ -233,17 +236,17 @@ class Reduce(object):
 #                print "NEW GROUP", f
 #                print group_pointings[file_pointing]
 
-        #Generally the filenames / target names are more recognisable than 
-        #plain co-ords
-        #So we rename each group by the first (alphabetical) filename,
-        #Which should be a target name.
+        # Generally the filenames / target names are more recognisable than
+        # plain co-ords
+        # So we rename each group by the first (alphabetical) filename,
+        # Which should be a target name.
         # (After splitting off the date suffix.)
         named_groups = {}
         for p, files in group_pointings.iteritems():
             name = sorted(files)[0].split('-')[0]
             named_groups[name] = {}
             named_groups[name][keys.files] = files
-            #Also convert FK5coordinates into something JSON friendly:
+            # Also convert FK5coordinates into something JSON friendly:
             named_groups[name][keys.pointing_fk5] = RaDecPair(p.ra.d, p.dec.d)
 
         for grpname, grp_info in named_groups.iteritems():
@@ -256,9 +259,9 @@ class Reduce(object):
     def _setup_file_loggers(self, filename, file_logdir):
 #        if (self.logger is not None) or (file_logdir is not None):
         target = os.path.splitext(filename)[0]
-        #It does no harm to set up the loggers,
-        #irrespective of whether we write them to file-
-        #The calling code could potentially grab them for other uses.
+        # It does no harm to set up the loggers,
+        # irrespective of whether we write them to file-
+        # The calling code could potentially grab them for other uses.
         self.file_log = logging.getLogger('.'.join((logger.name, target)))
         self.file_log.propagate = False
         self.file_log.setLevel(logging.DEBUG)
@@ -307,7 +310,7 @@ class Reduce(object):
             est_noise = self._parse_reweight_results(output_lines)
             file_info[keys.est_noise_mjy] = est_noise * 1000.0
 #            logger.info("Estimated noise: %s mJy", est_noise * 1000.0)
-                #self.files[self.active_file][keys.flagging_max]
+                # self.files[self.active_file][keys.flagging_max]
 
 #        except Exception as e:
 #            raise ValueError("Problem parsing command output for file: %s,",
@@ -345,7 +348,7 @@ class Reduce(object):
 
 
     def set_active_file(self, filename, file_logdir=None):
-        filename = filename.strip() #Ensure no stray whitespace
+        filename = filename.strip()  # Ensure no stray whitespace
         self.active_file = filename
         self._setup_file_loggers(filename, file_logdir)
         self.run_command(r'file %s \ ' % filename)

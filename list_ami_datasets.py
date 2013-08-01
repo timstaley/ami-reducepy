@@ -49,7 +49,7 @@ def handle_args(argv):
                                 + default_full_listings_filename)
 
     options, args = parser.parse_args(argv)
-    print "Writing data details to files:", options.datasets, ",", options.listings
+    print "Will write data details to files:", options.datasets, ",", options.listings
     return options
 
 if __name__ == "__main__":

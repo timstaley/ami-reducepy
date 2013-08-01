@@ -12,8 +12,8 @@ def handle_args():
     """
     Default values are defined here.
     """
-    default_output_dir = os.path.expanduser("~/ami_results")
-    default_ami_dir = "/opt/ami"
+    default_output_dir = os.path.expanduser("/data2/ami_results")
+    default_ami_dir = "/data2/ami"
 
     parser = argparse.ArgumentParser(prog='process_ami_data.py')
     parser.add_argument("-o", "--output-dir", default=default_output_dir,
