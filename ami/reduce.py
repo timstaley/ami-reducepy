@@ -296,7 +296,7 @@ class Reduce(object):
     def _parse_command_output(self, command, output_lines):
 #        try:
         file_info = self.files[self.active_file]
-        if 'rain' in command:
+        if 'apply rain' in command:
             rain_amp_corr = self._parse_rain_results(output_lines)
             file_info[keys.rain] = rain_amp_corr
 #            logger.info("Rain mean amplitude correction factor: %s",
