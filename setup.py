@@ -6,12 +6,12 @@ with open('requirements.txt') as f:
     required = f.read().splitlines()
 
 setup(
-    name="ami-reducepy",
-    version="0.1.4",
-    packages=['ami'],
+    name="drive-ami",
+    version="0.2.0",
+    packages=['driveami'],
     description="A python package for scripting the AMI-reduce pipeline.",
     author="Tim Staley",
     author_email="timstaley337@gmail.com",
-    url="https://github.com/timstaley/ami-reducepy",
+    url="https://github.com/timstaley/drive-ami",
     install_requires=required,
 )

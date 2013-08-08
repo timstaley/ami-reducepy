@@ -8,7 +8,7 @@ import json
 import optparse
 import sys
 
-import ami
+import driveami as ami
 
 
 def main():

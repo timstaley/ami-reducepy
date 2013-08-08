@@ -1,5 +1,5 @@
 ============
-ami-reducepy
+drive-ami
 ============
 A python package for scripting the AMI_-reduce pipeline.
 
@@ -54,8 +54,8 @@ Installation
    
 From the command line (preferably within a virtualenv):: 
 
- git clone git://github.com/timstaley/ami-reducepy.git
- cd ami-reducepy
+ git clone git://github.com/timstaley/drive-ami.git
+ cd drive-ami
  pip install numpy #Workaround for buggy scipy/numpy combined install.
  pip install .
 

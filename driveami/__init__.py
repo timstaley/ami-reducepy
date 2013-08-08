@@ -2,10 +2,9 @@ from __future__ import absolute_import
 import logging
 import os
 import json
-import ami.reduce as reduce
-from ami.reduce import Reduce
-import ami.keys as keys
-import ami.scripts as scripts
+import driveami.keys as keys
+import driveami.scripts as scripts
+from driveami.reduce import Reduce
 
 logger = logging.getLogger('ami')
 
@@ -21,10 +20,10 @@ def make_serializable(file_info_dict):
     E.g. the dict returned by the `process_rawfile` routine.
     """
     d = file_info_dict.copy()
-    #Pointing FK5:
+    # Pointing FK5:
     c = d[keys.pointing_fk5]
     d[keys.pointing_fk5] = reduce.RaDecPair(c.ra.degrees, c.dec.degrees)
-    #UTC datetime
+    # UTC datetime
     d[keys.time_ut] = [t.strftime(datetime_format) for t in d[keys.time_ut]]
     return d
 

@@ -6,7 +6,7 @@ import sys
 import logging
 import json
 
-import ami
+import driveami as ami
 
 def handle_args():
     """
@@ -94,7 +94,7 @@ def process_data_groups(data_groups, output_dir, ami_dir,
                              "Exception reads:\n%s\n",
                              rawfile, e)
                 continue
-            #Also save the group assignment in the listings: 
+            # Also save the group assignment in the listings:
             file_info[ami.keys.group_name] = grp_name
             processed_files_info[rawfile] = ami.make_serializable(file_info)
     return processed_files_info
