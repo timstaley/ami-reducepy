@@ -1,3 +1,3 @@
 pexpect
 scipy
-astropysics
+Astropysics==0.1.dev-r1178
