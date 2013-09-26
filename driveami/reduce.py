@@ -308,7 +308,7 @@ class Reduce(object):
 
         if 'reweight' in command:
             est_noise = self._parse_reweight_results(output_lines)
-            file_info[keys.est_noise_mjy] = est_noise * 1000.0
+            file_info[keys.est_noise_jy] = est_noise
 #            logger.info("Estimated noise: %s mJy", est_noise * 1000.0)
                 # self.files[self.active_file][keys.flagging_max]
 
