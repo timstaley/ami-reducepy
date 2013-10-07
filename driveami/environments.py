@@ -13,7 +13,7 @@ import os
 
 def _append_to_path(env, path, extra_dir):
     """Deal nicely with empty path, minimise boilerplating."""
-    env_dirs = env[path].split(':')
+    env_dirs = env.get(path, '').split(':')
     env_dirs.append(extra_dir)
     env[path] = ':'.join(env_dirs)
 

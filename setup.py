@@ -7,7 +7,7 @@ with open('requirements.txt') as f:
 
 setup(
     name="drive-ami",
-    version="0.3.1",
+    version="0.3.2",
     packages=['driveami'],
     description="A python package for scripting the AMI-reduce pipeline.",
     author="Tim Staley",
