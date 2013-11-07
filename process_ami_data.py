@@ -90,7 +90,7 @@ def process_data_groups(data_groups, output_dir, ami_dir,
                                     reduce=r,
                                     script=script)
             except (ValueError, IOError) as e:
-                logger.error("Hit exception reducing file: %s\n"
+                logger.exception("Hit exception reducing file: %s\n"
                              "Exception reads:\n%s\n",
                              rawfile, e)
                 continue

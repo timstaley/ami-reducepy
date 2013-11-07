@@ -368,27 +368,36 @@ class Reduce(object):
         ensure_dir(output_dir)
         tgt_name = os.path.splitext(rawfile)[0]
         tgt_path = os.path.join(output_dir, tgt_name + '.fits')
-        cal_basename = (self.files[rawfile][keys.calibrator] + '-' +
-                        tgt_name.split('-')[-1] + 'C.fits')
-        cal_path = os.path.join(output_dir, cal_basename)
+        if self.files[rawfile][keys.calibrator] is not None:
+            cal_basename = (self.files[rawfile][keys.calibrator] + '-' +
+                            tgt_name.split('-')[-1] + 'C.fits')
+            cal_path = os.path.join(output_dir, cal_basename)
+        else:
+            cal_path=None
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             tgt_temp = os.tempnam(self.working_dir, 'ami_') + '.fits'
             cal_temp = os.tempnam(self.working_dir, 'ami_') + '.fits'
 
-        self.run_command(r'write fits no no all 3-8 all %s %s \ ' %
-                         (os.path.basename(tgt_temp),
-                          os.path.basename(cal_temp)))
+        if cal_path is None:
+            output_paths_string = os.path.basename(tgt_temp)
+        else:
+            output_paths_string = " ".join((os.path.basename(tgt_temp),
+                                            os.path.basename(cal_temp)))
+        logger.debug("Writing to temp files %s" % output_paths_string)
+        self.run_command(r'write fits yes no all 3-8 all %s \ ' %
+                         output_paths_string)
 
         logger.debug("Renaming tempfile %s -> %s", tgt_temp, tgt_path)
         shutil.move(tgt_temp, tgt_path)
-        logger.debug("Renaming tempfile %s -> %s", cal_temp, cal_path)
-        shutil.move(cal_temp, cal_path)
-        logger.debug("Wrote target, calib. UVFITs to:\n\t%s\n\t%s",
-                         tgt_path, cal_path)
         info = self.files[self.active_file]
         info[keys.target_uvfits] = os.path.abspath(tgt_path)
-        info[keys.cal_uvfits] = os.path.abspath(cal_path)
+        if cal_path is not None:
+            logger.debug("Renaming tempfile %s -> %s", cal_temp, cal_path)
+            shutil.move(cal_temp, cal_path)
+            info[keys.cal_uvfits] = os.path.abspath(cal_path)
+        logger.debug("Wrote target, calib. UVFITs to:\n\t%s\n\t%s",
+                         tgt_path, cal_path)
 
     def update_flagging_info(self):
         lines = self.run_command(r'show flagging no yes \ ')
