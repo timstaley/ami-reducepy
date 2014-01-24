@@ -5,52 +5,51 @@ Groups AMI datasets by pointing direction,
 then dumps them in JSON format.
 """
 import json
-import optparse
+import argparse
 import sys
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
 import driveami as ami
 
 
 def main():
-    options = handle_args(sys.argv[1:])
+    options = handle_args()
     r = ami.Reduce(options.ami, options.array)
-    named_groups = r.group_pointings()
-    with open(options.datasets, 'w') as f:
-        json.dump([r.array , named_groups], f,
+    all_datasets = r.group_pointings()
+    with open(options.outfile, 'w') as f:
+        json.dump([r.array , all_datasets], f,
                   sort_keys=True, indent=4)
+
     return 0
 
-def handle_args(argv):
-    """
-    Returns tuple (options_object, outputfilename)
-    """
-    default_ami_dir = "/opt/ami"
+def handle_args():
+    default_ami_dir = "/data2/ami"
     default_array = 'LA'
-    default_short_listings_filename = 'datasets.json'
-    default_full_listings_filename = 'full_listings.json'
+    default_full_listings_filename = 'all_datasets.json'
+    default_matching_listings_filename = 'matching_datasets.json'
+    # default_full_listings_filename = 'full_listings.json'
 
     usage = """usage: %prog [options] outputfile\n"""\
     """Outputs a file in JSON format listing AMI files, grouped by pointing."""
 
-    parser = optparse.OptionParser(usage)
+    parser = argparse.ArgumentParser(description="Generate listings for raw AMI data")
 
-    parser.add_option("--ami", default=default_ami_dir,
+    parser.add_argument("--ami", default=default_ami_dir,
                        help="Path to AMI directory, default: " + default_ami_dir)
-    parser.add_option("--array", default=default_array,
+    parser.add_argument("--array", default=default_array,
                        help="Array data to work with (SA/LA), defaults to: "
                        + default_array)
 
-    parser.add_option('-d', '--datasets', default=default_short_listings_filename,
-                       help="Path to dataset groupings output file, default: "
-                                + default_short_listings_filename)
-
-    parser.add_option('-l', '--listings', default=default_full_listings_filename,
-                       help="Path to obs listings output file, default: "
+    parser.add_argument('-o', '--outfile', default=default_full_listings_filename,
+                       help="Path to full-list (all datasets) output file, default: "
                                 + default_full_listings_filename)
 
-    options, args = parser.parse_args(argv)
-    print "Will write data details to files:", options.datasets, ",", options.listings
-    return options
+
+
+    args = parser.parse_args()
+    print "Will output listings of all datasets to :", args.outfile
+    return args
 
 if __name__ == "__main__":
     sys.exit(main())
