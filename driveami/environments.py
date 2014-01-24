@@ -34,7 +34,6 @@ def ami_env(ami_topdir):
     
     """
     ami_env = {}
-    ami_env.update(os.environ)
     ami_env["AMI_DIR"] = ami_topdir
     _add_bin_lib_python(ami_env, ami_topdir, include_python=False)
     ami_env["PGPLOT_DIR"] = os.path.join(ami_topdir , "lib/pgplot")

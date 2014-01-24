@@ -214,25 +214,27 @@ class Reduce(object):
             ...
         }
         """
-        group_pointings = defaultdict(list)  # Dict, pointing --> Files
+        logger.info("Getting pointing info, patience...")
+        pointing_groups = defaultdict(list)  # Dict, pointing --> Files
         tolerance_deg = pointing_tolerance_in_degrees
 
         for filename, info in self.files.iteritems():
             if info[keys.pointing_fk5] is None:
+                logger.debug("Getting pointing info for " + filename)
                 self.get_obs_details(filename)
 
         for f, info in self.files.iteritems():
             file_pointing = info[keys.pointing_fk5]
             matched = False
-            for gp in group_pointings.iterkeys():
+            for gp in pointing_groups.iterkeys():
                 if (gp - file_pointing).degrees < tolerance_deg:
-                    group_pointings[gp].append(f)
+                    pointing_groups[gp].append(f)
                     matched = True
 #                    print "MATCH", f
 #                    print group_pointings[gp]
 
             if matched is False:
-                group_pointings[file_pointing].append(f)
+                pointing_groups[file_pointing].append(f)
 #                print "NEW GROUP", f
 #                print group_pointings[file_pointing]
 
@@ -242,7 +244,7 @@ class Reduce(object):
         # Which should be a target name.
         # (After splitting off the date suffix.)
         named_groups = {}
-        for p, files in group_pointings.iteritems():
+        for p, files in pointing_groups.iteritems():
             name = sorted(files)[0].split('-')[0]
             named_groups[name] = {}
             named_groups[name][keys.files] = files
@@ -385,7 +387,7 @@ class Reduce(object):
             output_paths_string = " ".join((os.path.basename(tgt_temp),
                                             os.path.basename(cal_temp)))
         logger.debug("Writing to temp files %s" % output_paths_string)
-        self.run_command(r'write fits yes no all 3-8 all %s \ ' %
+        self.run_command(r'write fits yes no all all all %s \ ' %
                          output_paths_string)
 
         logger.debug("Renaming tempfile %s -> %s", tgt_temp, tgt_path)
