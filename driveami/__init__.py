@@ -31,7 +31,10 @@ def process_rawfile(rawfile, output_dir,
                     reduce,
                     file_logging=True,
                     script=scripts.standard_reduction):
-    """Args:
+    """
+    A convenience function applying sensible defaults to reduce a rawfile.
+
+    Args:
     rawfile: Name of a file in the ami data dir, e.g. "SWIFT121101-121101.raw"
     output_dir: Folder where UVFITS for the target and calibrator will be output.
     reduce: instance of ami.Reduce
@@ -51,7 +54,8 @@ def process_rawfile(rawfile, output_dir,
     r.set_active_file(rawfile, file_logdir)
     r.run_script(script)
     r.update_flagging_info()
-    r.write_files(rawfile, output_dir)
+    r.write_files(rawfile, output_dir,
+                  write_command_overrides={'channels':'3-8'})
     r.files[rawfile][keys.obs_name] = os.path.splitext(rawfile)[0]
     info_filename = os.path.splitext(rawfile)[0] + '.json'
     with open(os.path.join(output_dir, info_filename), 'w') as f:

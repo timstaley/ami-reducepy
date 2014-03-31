@@ -27,7 +27,7 @@ def _add_bin_lib_python(env, package_group_dir, include_python=True):
         _append_to_path(env, 'PYTHONPATH',
                         os.path.join(package_group_dir, 'python-packages'))
 
-def ami_env(ami_topdir):
+def init_ami_env(ami_topdir):
     """Returns an environment dictionary configured for AMI-reduce execution.
         
     `ami_topdir` should be the top directory of the AMI-reduce installation.

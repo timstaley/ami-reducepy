@@ -15,20 +15,22 @@ the underlying fortran code, but this is a reasonably good quick solution.
 # which means 'use defaults'.
 # Unfortunately, this is also the python string escape character.
 # So I often use raw strings to make it clear what is being sent.
-
+from __future__ import absolute_import
 import os
 import shutil
 import pexpect
-from environments import ami_env
 from collections import defaultdict, namedtuple
 import logging
+import astropysics
 import astropysics.coords
 import warnings
 import datetime
+from driveami.environments import init_ami_env
+import driveami.scripts as scripts
 
 RaDecPair = namedtuple('RaDecPair', 'ra dec')
 
-import keys
+import driveami.keys as keys
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +46,8 @@ class Reduce(object):
     def __init__(self,
                  ami_rootdir,
                  array='LA',
-                 working_dir='/tmp'
+                 working_dir='/tmp',
+                 additional_env_variables=None
                  ):
         if len(ami_rootdir) > 16:
             warnings.warn("Long AMI root path detected - this may cause bugs!\n"
@@ -55,9 +58,12 @@ class Reduce(object):
             raise IOError("Cannot access ami-reduce binary at: " +
                                os.path.join(ami_rootdir, 'bin', 'reduce'))
         self.working_dir = working_dir
+        ami_env = init_ami_env(ami_rootdir)
+        if additional_env_variables is not None:
+            ami_env.update(additional_env_variables)
         self.child = pexpect.spawn('tcsh -c reduce',
                           cwd=self.working_dir,
-                          env=ami_env(ami_rootdir))
+                          env=ami_env)
         self.child.expect(self.prompt)
         # Records all known information about the fileset.
         # Each file entry is initialised to a ``defaultdict(lambda : None)``
@@ -358,7 +364,9 @@ class Reduce(object):
         logger.debug('Active file: %s', filename)
 
 
-    def write_files(self, rawfile, output_dir):
+    def write_files(self, rawfile, output_dir,
+                    write_command_template = scripts.write_command,
+                    write_command_overrides=None):
         """Writes out UVFITs files.
 
         NB: You should use this rather than performing writes manually:
@@ -387,8 +395,14 @@ class Reduce(object):
             output_paths_string = " ".join((os.path.basename(tgt_temp),
                                             os.path.basename(cal_temp)))
         logger.debug("Writing to temp files %s" % output_paths_string)
-        self.run_command(r'write fits yes no all all all %s \ ' %
-                         output_paths_string)
+
+        write_command_args = scripts.write_command_defaults.copy()
+        if write_command_overrides is not None:
+            write_command_args.update(write_command_overrides)
+
+        write_command_args['output_paths']=output_paths_string
+        write_command = write_command_template.format(**write_command_args)
+        self.run_command(write_command)
 
         logger.debug("Renaming tempfile %s -> %s", tgt_temp, tgt_path)
         shutil.move(tgt_temp, tgt_path)
