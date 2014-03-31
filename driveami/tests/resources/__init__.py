@@ -21,4 +21,5 @@ def setup_testdata_symlink(test_data_dir=_test_data_dir,
     return data_dict
 
 
-rawfile_basenames = ['J1753-140330.raw']
+j1753_basename = 'J1753-140330.raw'
+SWIFT_590206_basename =  'SWIFT_590206-140314.raw'

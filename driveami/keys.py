@@ -15,6 +15,7 @@ time_ut = 'time_utc'
 time_mjd = 'time_mjd'
 time_st = 'time_sidereal'
 duration = 'duration_hrs'
-
+archive_cal_available='archive_cal_available'
+archive_cal_days_apart='archive_cal_days_apart'
 
 

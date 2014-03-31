@@ -320,6 +320,11 @@ class Reduce(object):
 #            logger.info("Estimated noise: %s mJy", est_noise * 1000.0)
                 # self.files[self.active_file][keys.flagging_max]
 
+        if 'cal inter' in command:
+            avail, daysep = self._parse_cal_inter_results(output_lines)
+            file_info[keys.archive_cal_available]=avail
+            file_info[keys.archive_cal_days_apart]=daysep
+
 #        except Exception as e:
 #            raise ValueError("Problem parsing command output for file: %s,",
 #                             "command: %s, error message:\n%s"
@@ -347,6 +352,17 @@ class Reduce(object):
                 tokens = line.strip().split()
                 return float(tokens[-2])
         raise ValueError("Parsing error, could not find noise estimate.")
+
+    def _parse_cal_inter_results(self, output_lines):
+        days_apart=None
+        archive_cal_available=True
+        for line in output_lines:
+            if 'fluxes for this source not available' in line:
+                archive_cal_available=False
+            if 'days apart' in line:
+                tokens = line.strip().split()
+                days_apart=float(tokens[6])
+        return archive_cal_available, days_apart
 
     def run_script(self, script_string):
         """Takes a script of commands, one command per line"""
