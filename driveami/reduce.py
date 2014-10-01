@@ -227,7 +227,16 @@ class Reduce(object):
         for filename, info in self.files.iteritems():
             if info[keys.pointing_fk5] is None:
                 logger.debug("Getting pointing info for " + filename)
-                self.get_obs_details(filename)
+                try:
+                    self.get_obs_details(filename)
+                except Exception as error:
+                    logger.error("\n"
+                                 "**********************\n"
+                                 "Warning! Threw an exception trying to parse "
+                                 "details for %s"
+                                 "***********************\n"
+                                 "\n",  filename)
+
 
         for f, info in self.files.iteritems():
             file_pointing = info[keys.pointing_fk5]
