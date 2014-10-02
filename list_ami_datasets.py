@@ -7,6 +7,7 @@ then dumps them in JSON format.
 import json
 import argparse
 import sys
+import os
 
 import logging
 logging.basicConfig(level=logging.DEBUG)
@@ -15,18 +16,28 @@ import driveami as ami
 
 def main():
     options = handle_args()
+    grouped_by_id_filename = options.outfile+'_by_id.json'
+    grouped_by_pointing_filename = options.outfile+'_by_pointing.json'
+
     r = ami.Reduce(options.ami, options.array)
-    all_datasets = r.group_pointings()
-    with open(options.outfile, 'w') as f:
-        json.dump([r.array , all_datasets], f,
+    r.load_obs_info()
+    id_groups = r.group_obs_by_target_id()
+    with open(grouped_by_id_filename, 'w') as f:
+        json.dump([r.array , id_groups], f,
+                  sort_keys=True, indent=4)
+
+    pointing_groups = r.group_target_ids_by_pointing(id_groups,
+                                             pointing_tolerance_in_degrees=0.5)
+    with open(grouped_by_pointing_filename, 'w') as f:
+        json.dump([r.array , pointing_groups], f,
                   sort_keys=True, indent=4)
 
     return 0
 
 def handle_args():
-    default_ami_dir = "/data2/ami"
+    default_ami_dir = os.path.expanduser("~/ami")
     default_array = 'LA'
-    default_full_listings_filename = 'all_datasets.json'
+    default_full_listings_filename = 'all_datasets'
     default_matching_listings_filename = 'matching_datasets.json'
     # default_full_listings_filename = 'full_listings.json'
 

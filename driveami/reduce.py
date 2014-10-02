@@ -23,8 +23,12 @@ from collections import defaultdict, namedtuple
 import logging
 import astropysics
 import astropysics.coords
+from astropysics.coords import  FK5Coordinates
 import warnings
 import datetime
+
+from numpy import median
+
 from driveami.environments import init_ami_env
 import driveami.scripts as scripts
 
@@ -101,7 +105,7 @@ class Reduce(object):
             cols = l.split(' ', 1)
             fname = cols[0]
             if fname not in self.files:
-                self.files[fname] = defaultdict(lambda : None)
+                self.files[fname] = {}
 
         p.sendline(r'list comment \ ')
 #        p.sendline(r'list comment \ ')
@@ -124,8 +128,9 @@ class Reduce(object):
 
         hms_dms = Reduce._parse_coords(filename, obs_lines)
         info[keys.pointing_hms_dms] = hms_dms
-        info[keys.pointing_fk5] = Reduce._convert_to_ap_FK5_coords(hms_dms)
+        info[keys.pointing_fk5] = Reduce._convert_to_FK5_coords(hms_dms)
         info[keys.calibrator] = Reduce._parse_calibrator(obs_lines)
+        info[keys.field] = Reduce._parse_field(obs_lines)
         info.update(Reduce._parse_obs_datetime(obs_lines))
         return info
 
@@ -135,6 +140,14 @@ class Reduce(object):
             if 'with calibrator' in line:
                 tokens = line.split()
                 return tokens[-1]
+
+
+    @staticmethod
+    def _parse_field(obs_listing):
+        for line in obs_listing:
+            if 'field observation' in line:
+                tokens = line.split()
+                return tokens[0]
 
     @staticmethod
     def _parse_times(line):
@@ -193,7 +206,7 @@ class Reduce(object):
                             % filename)
 
     @staticmethod
-    def _convert_to_ap_FK5_coords(hms_dms_pair):
+    def _convert_to_FK5_coords(hms_dms_pair):
         """
         Args:
 
@@ -203,30 +216,16 @@ class Reduce(object):
               hms_dms_pair.ra, sghms=True)
         dec = astropysics.coords.AngularCoordinate(
               hms_dms_pair.dec, sghms=False)
-        return astropysics.coords.FK5Coordinates(ra, dec)
+        ap_coords = astropysics.coords.FK5Coordinates(ra, dec)
+        return RaDecPair(ap_coords.ra.d, ap_coords.dec.d)
 
 
-    def group_pointings(self, pointing_tolerance_in_degrees=0.5):
-        """
-        Attempt to group together datasets by inspecting pointing target.
-
-        Returns:
-        Nested dict with structure:
-        { FIRST_FILENAME_IN_GROUP:
-            {
-            files: [ <list of files>],
-            pointing: <string representation of group pointing>
-            },
-            ...
-        }
-        """
-        logger.info("Getting pointing info, patience...")
-        pointing_groups = defaultdict(list)  # Dict, pointing --> Files
-        tolerance_deg = pointing_tolerance_in_degrees
-
+    def load_obs_info(self):
+        logger.info("Loading observation information, patience...")
+        self.update_files()
         for filename, info in self.files.iteritems():
-            if info[keys.pointing_fk5] is None:
-                logger.debug("Getting pointing info for " + filename)
+            if info.get(keys.pointing_fk5,None) is None:
+                logger.debug("Getting obs info for %s", filename)
                 try:
                     self.get_obs_details(filename)
                 except Exception as error:
@@ -238,40 +237,120 @@ class Reduce(object):
                                  "\n",  filename)
 
 
-        for f, info in self.files.iteritems():
-            file_pointing = info[keys.pointing_fk5]
-            matched = False
-            for gp in pointing_groups.iterkeys():
-                if (gp - file_pointing).degrees < tolerance_deg:
-                    pointing_groups[gp].append(f)
-                    matched = True
-#                    print "MATCH", f
-#                    print group_pointings[gp]
+    def group_obs_by_target_id(self):
+        """
+        Group together datasets by target id.
 
-            if matched is False:
-                pointing_groups[file_pointing].append(f)
-#                print "NEW GROUP", f
-#                print group_pointings[file_pointing]
+        Where 'target id' is everything in the filename, up to the last '-'
 
-        # Generally the filenames / target names are more recognisable than
-        # plain co-ords
-        # So we rename each group by the first (alphabetical) filename,
-        # Which should be a target name.
-        # (After splitting off the date suffix.)
-        named_groups = {}
-        for p, files in pointing_groups.iteritems():
-            name = sorted(files)[0].split('-')[0]
-            named_groups[name] = {}
-            named_groups[name][keys.files] = files
-            # Also convert FK5coordinates into something JSON friendly:
-            named_groups[name][keys.pointing_fk5] = RaDecPair(p.ra.d, p.dec.d)
+        Returns:
+        Nested dict with structure:
+        { Field name:
+            {
+            files: [ <list of files>],
+            median_pointing: <string representation of group pointing>
+            },
+            ...
+        }
+        """
 
-        for grpname, grp_info in named_groups.iteritems():
-            for f in grp_info[keys.files]:
-                self.files[f][keys.group_name] = grpname
-                fk5 = self.files[f][keys.pointing_fk5]
-                self.files[f][keys.pointing_fk5] = RaDecPair(fk5.ra.d, fk5.dec.d)
-        return named_groups
+        target_groups = {}
+
+        #Set up empty lists first:
+        for filename, info in self.files.iteritems():
+            target_id = filename.rsplit('-',1)[0]
+            target_groups[target_id]={}
+            target_groups[target_id][keys.files]=[]
+
+        #Now put the files in
+        for filename, info in self.files.iteritems():
+            target_id = filename.rsplit('-',1)[0]
+            target_groups[target_id][keys.files].append(filename)
+
+        for target_id in target_groups:
+            ra_list, dec_list = [],[]
+            for filename in target_groups[target_id][keys.files]:
+                info = self.files[filename]
+                obs_pointing = info.get(keys.pointing_fk5, None)
+                if obs_pointing is not None:
+                    ra, dec = obs_pointing.ra, obs_pointing.dec
+                    ra_list.append(ra)
+                    dec_list.append(dec)
+            if ra_list:
+                median_ra, median_dec = median(ra_list), median(dec_list)
+                target_groups[target_id][keys.target_pointing] = (median_ra,median_dec)
+
+        return target_groups
+
+
+
+    def group_target_ids_by_pointing(self,
+                                 target_id_groups,
+                                 pointing_tolerance_in_degrees=0.5):
+        """
+        Attempt to group together datasets by inspecting pointing target.
+
+        Returns:
+        Nested dict with structure:
+        { TARGET_ID:
+            {
+            files: [ <list of files>],
+            pointing: <string representation of group pointing>
+            },
+            ...
+        }
+        """
+
+        ungrouped = set(target_id_groups.keys())
+
+        def angular_separation(pt1, pt2):
+            pt1_fk5 = FK5Coordinates(pt1[0], pt1[1])
+            pt2_fk5 = FK5Coordinates(pt2[0], pt2[1])
+            return (pt1_fk5 - pt2_fk5).degrees
+
+        tolerance_deg = pointing_tolerance_in_degrees
+
+        pointing_groups_dict = {}
+
+        def search_ungrouped_for_matches(cluster_ids, ungrouped):
+            matches_found = 0
+            cluster_positions = [ ]
+            for target_id1 in cluster_ids:
+                pointing1 = target_id_groups[target_id1][keys.target_pointing]
+                cluster_positions.append(pointing1)
+
+            for target_id2 in list(ungrouped):
+                pointing2 = target_id_groups[target_id2][keys.target_pointing]
+                for pointing1 in cluster_positions:
+                    if angular_separation(pointing1,pointing2) < tolerance_deg:
+                        matches_found += 1
+                        cluster_ids.append(target_id2)
+                        cluster_positions.append(target_id_groups[target_id2][keys.target_pointing])
+                        ungrouped.remove(target_id2)
+                        #Found a match already, break and move to next ungrouped item.
+                        break
+            return matches_found
+
+        while ungrouped:
+            #New cluster
+            cluster_ids = []
+            cluster_ids.append(ungrouped.pop())
+
+            matches_found = True
+            while matches_found: #Keep looping until clusters have grown as far as possible.
+                matches_found = search_ungrouped_for_matches(cluster_ids,
+                                                             ungrouped)
+            first_id = sorted(cluster_ids)[0]
+            pointing_groups_dict[first_id] = {}
+            pointing_groups_dict[first_id][keys.target_pointing]=(
+                target_id_groups[first_id][keys.target_pointing])
+            pointing_groups_dict[first_id][keys.files]=[]
+            for target_id in cluster_ids:
+                pointing_groups_dict[first_id][keys.files].extend(
+                    target_id_groups[target_id][keys.files])
+
+        return pointing_groups_dict
+
 
     def _setup_file_loggers(self, filename, file_logdir):
 #        if (self.logger is not None) or (file_logdir is not None):
