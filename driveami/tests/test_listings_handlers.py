@@ -27,7 +27,7 @@ class TestGrouping(TestCase):
         id_groups = self.reduce.group_obs_by_target_id()
         pointing_groups = self.reduce.group_target_ids_by_pointing(id_groups)
         #Regression test, assuming fixed data dump
-        self.assertEqual(len(pointing_groups.keys(),130)
+        self.assertEqual(len(pointing_groups.keys()),130)
         
 
 

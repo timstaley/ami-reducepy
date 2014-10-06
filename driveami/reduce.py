@@ -400,7 +400,7 @@ class Reduce(object):
         if 'flag' in command:
             flagging = self._parse_flagging_results(output_lines)
             file_info[keys.flagged_max] = max(flagging,
-                                                  file_info[keys.flagged_max])
+                                          file_info.get(keys.flagged_max,None))
 
         if 'reweight' in command:
             est_noise = self._parse_reweight_results(output_lines)
