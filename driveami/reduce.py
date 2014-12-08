@@ -274,10 +274,9 @@ class Reduce(object):
                     dec_list.append(dec)
             if ra_list:
                 median_ra, median_dec = median(ra_list), median(dec_list)
-                target_groups[target_id][keys.target_pointing] = (median_ra,median_dec)
+                target_groups[target_id][keys.target_pointing_deg] = (median_ra,median_dec)
 
         return target_groups
-
 
 
     def group_target_ids_by_pointing(self,
@@ -297,49 +296,56 @@ class Reduce(object):
         }
         """
 
+        def _find_close_targets(first_target_id, ungrouped, skycoords,
+                               tolerance_deg):
+            logger.debug("Finding targets near "+first_target_id+" ... ")
+            cluster_ids = [first_target_id]
+            # Take the list of positions belonging to the current group
+            # Split it into three lists, to avoid modifying the list as we
+            # iterate over it:
+
+            #Positions we've already scanned for matches
+            processed=[]
+            #Positions we're about to scan for matches:
+            process_next= [ skycoords[first_target_id] ]
+            # Newly added positions that could extend the cluster in the next
+            # iteration:
+            unprocessed=[]
+            while process_next:
+                for pointing1 in process_next:
+                    for id2 in list(ungrouped):
+                        pointing2 = skycoords[id2]
+                        if pointing1.separation(pointing2).degree < tolerance_deg:
+                            cluster_ids.append(id2)
+                            unprocessed.append(pointing2)
+                            ungrouped.remove(id2)
+                            logger.debug("... "+id2+" added to group.")
+                # Cycle the lists before next iteration
+                processed.extend(process_next)
+                process_next=unprocessed
+                unprocessed=[]
+            logger.debug("... {} targets in group.".format(len(cluster_ids)))
+            return cluster_ids
+
+
         ungrouped = set(target_id_groups.keys())
-
-        def angular_separation(pt1, pt2):
-            pt1_sc = SkyCoord(pt1[0], pt1[1], unit='deg')
-            pt2_sc = SkyCoord(pt2[0], pt2[1], unit='deg')
-            return pt1_sc.separation(pt2_sc).degree
-
-        tolerance_deg = pointing_tolerance_in_degrees
+        temp_skycoords = {}
+        for id in ungrouped:
+            ra_dec = target_id_groups[id][keys.target_pointing_deg]
+            temp_skycoords[id] =SkyCoord(ra_dec[0], ra_dec[1], unit='deg')
 
         pointing_groups_dict = {}
 
-        def search_ungrouped_for_matches(cluster_ids, ungrouped):
-            matches_found = 0
-            cluster_positions = [ ]
-            for target_id1 in cluster_ids:
-                pointing1 = target_id_groups[target_id1][keys.target_pointing]
-                cluster_positions.append(pointing1)
-
-            for target_id2 in list(ungrouped):
-                pointing2 = target_id_groups[target_id2][keys.target_pointing]
-                for pointing1 in cluster_positions:
-                    if angular_separation(pointing1,pointing2) < tolerance_deg:
-                        matches_found += 1
-                        cluster_ids.append(target_id2)
-                        cluster_positions.append(target_id_groups[target_id2][keys.target_pointing])
-                        ungrouped.remove(target_id2)
-                        #Found a match already, break and move to next ungrouped item.
-                        break
-            return matches_found
-
         while ungrouped:
-            #New cluster
-            cluster_ids = []
-            cluster_ids.append(ungrouped.pop())
 
-            matches_found = True
-            while matches_found: #Keep looping until clusters have grown as far as possible.
-                matches_found = search_ungrouped_for_matches(cluster_ids,
-                                                             ungrouped)
+            cluster_ids = _find_close_targets(ungrouped.pop(), ungrouped,
+                                              temp_skycoords,
+                                              pointing_tolerance_in_degrees)
+
             first_id = sorted(cluster_ids)[0]
             pointing_groups_dict[first_id] = {}
-            pointing_groups_dict[first_id][keys.target_pointing]=(
-                target_id_groups[first_id][keys.target_pointing])
+            pointing_groups_dict[first_id][keys.target_pointing_deg]=(
+                target_id_groups[first_id][keys.target_pointing_deg])
             pointing_groups_dict[first_id][keys.files]=[]
             for target_id in cluster_ids:
                 pointing_groups_dict[first_id][keys.files].extend(

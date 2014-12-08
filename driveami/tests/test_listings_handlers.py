@@ -5,6 +5,9 @@ import driveami
 import driveami.tests.resources as resources
 import driveami.keys as keys
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
 import pickle
 
 # @unittest.skip
