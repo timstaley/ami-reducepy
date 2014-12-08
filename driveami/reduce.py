@@ -485,8 +485,8 @@ class Reduce(object):
         tgt_name = os.path.splitext(rawfile)[0]
         tgt_path = os.path.join(output_dir, tgt_name + '.fits')
         if self.files[rawfile][keys.calibrator] is not None:
-            cal_basename = (self.files[rawfile][keys.calibrator] + '-' +
-                            tgt_name.split('-')[-1] + 'C.fits')
+            cal_basename = (tgt_name+'_cal_'+
+                            self.files[rawfile][keys.calibrator]+'.fits')
             cal_path = os.path.join(output_dir, cal_basename)
         else:
             cal_path=None

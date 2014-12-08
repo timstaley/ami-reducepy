@@ -13,6 +13,7 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 import driveami as ami
 
+logger = logging.getLogger("list_ami_datasets")
 
 def main():
     options = handle_args()
@@ -20,12 +21,14 @@ def main():
     grouped_by_pointing_filename = options.outfile+'_by_pointing.json'
 
     r = ami.Reduce(options.ami, options.array)
+    logger.info("Loading observation metadata.")
     r.load_obs_info()
+    logger.info("Grouping observations by target ID")
     id_groups = r.group_obs_by_target_id()
     with open(grouped_by_id_filename, 'w') as f:
         json.dump([r.array , id_groups], f,
                   sort_keys=True, indent=4)
-
+    logger.info("Grouping targets by pointing")
     pointing_groups = r.group_target_ids_by_pointing(id_groups,
                                              pointing_tolerance_in_degrees=0.5)
     with open(grouped_by_pointing_filename, 'w') as f:
