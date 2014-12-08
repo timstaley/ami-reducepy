@@ -1,0 +1,3 @@
+[submodule "driveami/tests/resources"]
+	path = driveami/tests/resources
+	url = git@github.com:timstaley/drive-ami-testdata.git
