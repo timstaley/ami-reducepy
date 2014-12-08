@@ -1,6 +1,6 @@
 comment = 'comment'
 pointing_hms_dms = 'pointing_hms_dms'
-pointing_fk5 = 'pointing_fk5' #Astropysics FK5 class
+pointing_degrees = 'pointing_degrees'
 calibrator = 'calibrator'
 rain = 'rain_amp_corr'
 flagged_max = 'flagged_max_percent'

@@ -7,7 +7,7 @@ import driveami.keys as keys
 
 import pickle
 
-
+# @unittest.skip
 class TestGrouping(TestCase):
     def setUp(self):
         env_extras = resources.setup_testdata_symlink()

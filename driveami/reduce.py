@@ -21,9 +21,8 @@ import shutil
 import pexpect
 from collections import defaultdict, namedtuple
 import logging
-import astropysics
-import astropysics.coords
-from astropysics.coords import  FK5Coordinates
+from astropy.coordinates import SkyCoord, Longitude, Latitude
+import astropy.units
 import warnings
 import datetime
 
@@ -128,7 +127,7 @@ class Reduce(object):
 
         hms_dms = Reduce._parse_coords(filename, obs_lines)
         info[keys.pointing_hms_dms] = hms_dms
-        info[keys.pointing_fk5] = Reduce._convert_to_FK5_coords(hms_dms)
+        info[keys.pointing_degrees] = Reduce._convert_to_decimal_degrees(hms_dms)
         info[keys.calibrator] = Reduce._parse_calibrator(obs_lines)
         info[keys.field] = Reduce._parse_field(obs_lines)
         info.update(Reduce._parse_obs_datetime(obs_lines))
@@ -206,25 +205,22 @@ class Reduce(object):
                             % filename)
 
     @staticmethod
-    def _convert_to_FK5_coords(hms_dms_pair):
+    def _convert_to_decimal_degrees(hms_dms_pair):
         """
         Args:
 
           - a tuple-pair of ('h:m:s','d:m:s') strings representing ra/dec
         """
-        ra = astropysics.coords.AngularCoordinate(
-              hms_dms_pair.ra, sghms=True)
-        dec = astropysics.coords.AngularCoordinate(
-              hms_dms_pair.dec, sghms=False)
-        ap_coords = astropysics.coords.FK5Coordinates(ra, dec)
-        return RaDecPair(ap_coords.ra.d, ap_coords.dec.d)
+        ra = Longitude(hms_dms_pair.ra, unit = astropy.units.hourangle)
+        dec = Latitude(hms_dms_pair.dec, unit = astropy.units.deg)
+        return RaDecPair(ra.degree, dec.degree)
 
 
     def load_obs_info(self):
         logger.info("Loading observation information, patience...")
         self.update_files()
         for filename, info in self.files.iteritems():
-            if info.get(keys.pointing_fk5,None) is None:
+            if info.get(keys.pointing_degrees,None) is None:
                 logger.debug("Getting obs info for %s", filename)
                 try:
                     self.get_obs_details(filename)
@@ -271,7 +267,7 @@ class Reduce(object):
             ra_list, dec_list = [],[]
             for filename in target_groups[target_id][keys.files]:
                 info = self.files[filename]
-                obs_pointing = info.get(keys.pointing_fk5, None)
+                obs_pointing = info.get(keys.pointing_degrees, None)
                 if obs_pointing is not None:
                     ra, dec = obs_pointing.ra, obs_pointing.dec
                     ra_list.append(ra)
@@ -304,9 +300,9 @@ class Reduce(object):
         ungrouped = set(target_id_groups.keys())
 
         def angular_separation(pt1, pt2):
-            pt1_fk5 = FK5Coordinates(pt1[0], pt1[1])
-            pt2_fk5 = FK5Coordinates(pt2[0], pt2[1])
-            return (pt1_fk5 - pt2_fk5).degrees
+            pt1_sc = SkyCoord(pt1[0], pt1[1], unit='deg')
+            pt2_sc = SkyCoord(pt2[0], pt2[1], unit='deg')
+            return pt1_sc.separation(pt2_sc).degree
 
         tolerance_deg = pointing_tolerance_in_degrees
 
