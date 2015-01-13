@@ -7,8 +7,11 @@ with open('requirements.txt') as f:
 
 setup(
     name="drive-ami",
-    version="0.4.1",
+    version="0.5.0",
     packages=['driveami'],
+    scripts=['bin/driveami_filter_datasets.py',
+             'bin/driveami_list_datasets.py',
+             'bin/driveami_process_data.py'],
     description="A python package for scripting the AMI-reduce pipeline.",
     author="Tim Staley",
     author_email="timstaley337@gmail.com",

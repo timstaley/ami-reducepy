@@ -300,30 +300,31 @@ class Reduce(object):
                                tolerance_deg):
             logger.debug("Finding targets near "+first_target_id+" ... ")
             cluster_ids = [first_target_id]
+
             # Take the list of positions belonging to the current group
             # Split it into three lists, to avoid modifying the list as we
             # iterate over it:
-
-            #Positions we've already scanned for matches
-            processed=[]
-            #Positions we're about to scan for matches:
-            process_next= [ skycoords[first_target_id] ]
+            # Positions we've already scanned for matches
+            processed = []
+            # Positions we're about to scan for matches:
+            process_next = [skycoords[first_target_id]]
             # Newly added positions that could extend the cluster in the next
             # iteration:
-            unprocessed=[]
+            newly_included = []
             while process_next:
                 for pointing1 in process_next:
                     for id2 in list(ungrouped):
                         pointing2 = skycoords[id2]
-                        if pointing1.separation(pointing2).degree < tolerance_deg:
+                        if pointing1.separation(
+                                pointing2).degree < tolerance_deg:
                             cluster_ids.append(id2)
-                            unprocessed.append(pointing2)
+                            newly_included.append(pointing2)
                             ungrouped.remove(id2)
-                            logger.debug("... "+id2+" added to group.")
+                            logger.debug("... " + id2 + " added to group.")
                 # Cycle the lists before next iteration
                 processed.extend(process_next)
-                process_next=unprocessed
-                unprocessed=[]
+                process_next = newly_included
+                newly_included = []
             logger.debug("... {} targets in group.".format(len(cluster_ids)))
             return cluster_ids
 
