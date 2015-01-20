@@ -1,2 +1,0 @@
-pexpect
-astropy>=0.4.2

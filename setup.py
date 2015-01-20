@@ -2,19 +2,22 @@
 
 from setuptools import setup
 
-with open('requirements.txt') as f:
-    required = f.read().splitlines()
+
+requirements = ['pexpect',
+                'astropy>=0.4,<0.5'
+]
+
 
 setup(
     name="drive-ami",
-    version="0.5.0",
+    version="0.5.1",
     packages=['driveami'],
     scripts=['bin/driveami_filter_datasets.py',
              'bin/driveami_list_datasets.py',
              'bin/driveami_process_data.py'],
-    description="A python package for scripting the AMI-reduce pipeline.",
+    description="An interface layer for scripting the AMI-Reduce pipeline.",
     author="Tim Staley",
     author_email="timstaley337@gmail.com",
     url="https://github.com/timstaley/drive-ami",
-    install_requires=required,
+    install_requires=requirements,
 )
