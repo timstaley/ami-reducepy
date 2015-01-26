@@ -20,4 +20,3 @@ duration = 'duration_hrs'
 archive_cal_available='archive_cal_available'
 archive_cal_days_apart='archive_cal_days_apart'
 
-

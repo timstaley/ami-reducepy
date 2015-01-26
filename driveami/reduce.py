@@ -298,7 +298,7 @@ class Reduce(object):
 
         def _find_close_targets(first_target_id, ungrouped, skycoords,
                                tolerance_deg):
-            logger.debug("Finding targets near "+first_target_id+" ... ")
+            logger.debug("Finding observations near "+first_target_id+" ... ")
             cluster_ids = [first_target_id]
 
             # Take the list of positions belonging to the current group
@@ -325,7 +325,7 @@ class Reduce(object):
                 processed.extend(process_next)
                 process_next = newly_included
                 newly_included = []
-            logger.debug("... {} targets in group.".format(len(cluster_ids)))
+            logger.debug("... {} rawfiles in group.".format(len(cluster_ids)))
             return cluster_ids
 
 

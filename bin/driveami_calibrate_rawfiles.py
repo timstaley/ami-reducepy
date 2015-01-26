@@ -6,7 +6,7 @@ import sys
 import logging
 import json
 
-import driveami as ami
+import driveami
 
 def handle_args():
     """
@@ -31,28 +31,30 @@ def handle_args():
                         help='Specify individual files for reduction')
     parser.add_argument('-g', '--group', dest='groupname', default='NOGROUP',
                         help='Specify group name for individually specified files')
-    parser.add_argument('-r', '--array', default='LA',
-                        help='Specify array (SA/LA) for individually specified files')
+    # parser.add_argument('-r', '--array', default='LA',
+    #                     help='Specify array (SA/LA) for individually specified files')
 
-    values = parser.parse_args()
-    values.ami_dir = os.path.expanduser(values.ami)
-    values.output_dir = os.path.expanduser(values.output_dir)
+    options = parser.parse_args()
+    options.ami_dir = os.path.expanduser(options.ami)
+    options.output_dir = os.path.expanduser(options.output_dir)
 
-    if values.script:
-        with open(values.script) as f:
-            values.script = f.read()
+    if options.script:
+        with open(options.script) as f:
+            options.script = f.read()
 
-    if values.groups_file:
-        print "Reducing files listed in:", values.groups_file
-        values.array, data_groups = json.load(open(values.groups_file))
-    elif values.files:
-        data_groups = {values.groupname: {'files':values.files}}
+    if options.groups_file:
+        print "Reducing files listed in:", options.groups_file
+        with open(options.groups_file) as f:
+            data_groups, _ = driveami.load_listing(f,
+                               expected_datatype=driveami.Datatype.ami_la_raw)
+    elif options.files:
+        data_groups = {options.groupname: {'files':options.files}}
     else:
         parser.print_help()
         sys.exit()
 
-    print "SCRIPT:", values.script
-    return values, data_groups
+    # print "SCRIPT:", options.script
+    return options, data_groups
 
 def output_preamble_to_log(data_groups):
     logger.info("*************************************")
@@ -60,7 +62,7 @@ def output_preamble_to_log(data_groups):
                  "--------------------------------")
     for key in sorted(data_groups.keys()):
         logger.info("%s:", key)
-        for f in data_groups[key][ami.keys.files]:
+        for f in data_groups[key][driveami.keys.files]:
             logger.info("\t %s", f)
         logger.info("--------------------------------")
     logger.info("*************************************")
@@ -75,17 +77,18 @@ def process_data_groups(data_groups, output_dir, ami_dir,
     array: 'LA' or 'SA' (Default: LA)
     """
     if not script:
-        script = ami.scripts.standard_reduction
-    r = ami.Reduce(ami_dir, array=array)
+        script = driveami.scripts.standard_reduction
+    r = driveami.Reduce(ami_dir, array=array)
     processed_files_info = {}
     for grp_name in sorted(data_groups.keys()):
-        files = data_groups[grp_name][ami.keys.files]
+        files = data_groups[grp_name][driveami.keys.files]
         grp_dir = os.path.join(output_dir, grp_name, 'ami')
-        ami.ensure_dir(grp_dir)
+        driveami.ensure_dir(grp_dir)
+        logger.info('Calibrating rawfiles and writing to {}'.format(grp_dir))
         for rawfile in files:
             try:
                 logger.info("Reducing rawfile %s ...", rawfile)
-                file_info = ami.process_rawfile(rawfile,
+                file_info = driveami.process_rawfile(rawfile,
                                     output_dir=grp_dir,
                                     reduce=r,
                                     script=script)
@@ -95,28 +98,32 @@ def process_data_groups(data_groups, output_dir, ami_dir,
                              rawfile, e)
                 continue
             # Also save the group assignment in the listings:
-            file_info[ami.keys.group_name] = grp_name
-            processed_files_info[rawfile] = ami.make_serializable(file_info)
+            file_info[driveami.keys.group_name] = grp_name
+            processed_files_info[rawfile] = driveami.make_serializable(file_info)
     return processed_files_info
+
+
+def main():
+    options, data_groups = handle_args()
+    output_preamble_to_log(data_groups)
+    processed_files_info = process_data_groups(data_groups,
+                                options.output_dir,
+                                options.ami_dir,
+                                array='LA',
+                                script=options.script)
+    with open('processed_files.json', 'w') as f:
+        json.dump(processed_files_info, f, sort_keys=True, indent=4)
+    sys.exit(0)
+
 
 if __name__ == "__main__":
     logging.basicConfig(format='%(name)s:%(levelname)s:%(message)s',
-                        filemode='w',
-                        filename="ami-reduce.log",
-                        level=logging.DEBUG)
+                    filemode='w',
+                    filename="ami-reduce.log",
+                    level=logging.DEBUG)
     logger = logging.getLogger()
     log_stdout = logging.StreamHandler(sys.stdout)
     log_stdout.setLevel(logging.INFO)
     logger.addHandler(log_stdout)
 #    logging.basicConfig(level=logging.WARN)
-
-    values, data_groups = handle_args()
-    output_preamble_to_log(data_groups)
-    processed_files_info = process_data_groups(data_groups,
-                                values.output_dir,
-                                values.ami_dir,
-                                array=values.array,
-                                script=values.script)
-    with open('processed_files.json', 'w') as f:
-        json.dump(processed_files_info, f, sort_keys=True, indent=4)
-    sys.exit(0)
+    main()
