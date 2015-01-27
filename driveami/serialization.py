@@ -36,6 +36,19 @@ def save_calfile_listing(list_of_calobs, filepointer):
 
 
 def load_listing(filepointer, expected_datatype=None):
+    """
+    Load a json listing tagged with a driveami Datatype key.
+
+    Args:
+        filepointer: Filestream for reading.
+        expected_datatype: If defined, this will raise a ValueError if
+            a non-matching datatype key-entry is found.
+
+    Returns:
+        Tuple (listing_dict, found_datatype): 2-Tuple of results and datatype.
+
+
+    """
     listing = json.load(filepointer)
     if (Datatype.magic_key not in listing):
         raise ValueError(
