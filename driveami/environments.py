@@ -11,6 +11,10 @@ are handy when defining multiple environments.
 """
 import os
 
+default_ami_dir = os.environ.get('AMI_DIR',os.path.expanduser("~/ami"))
+default_output_dir = os.environ.get('AMI_RESULTS',
+                                   os.path.expanduser("~/ami_results"))
+
 def _append_to_path(env, path, extra_dir):
     """Deal nicely with empty path, minimise boilerplating."""
     env_dirs = env.get(path, '').split(':')

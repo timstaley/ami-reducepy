@@ -7,36 +7,42 @@ import logging
 import json
 
 import driveami
+from driveami.environments import (default_ami_dir, default_output_dir)
 
 def handle_args():
     """
     Default values are defined here.
     """
-    default_ami_dir = os.path.expanduser("~/ami")
-    default_output_dir = os.path.expanduser("~/ami_results")
-
     parser = argparse.ArgumentParser(prog='process_ami_data.py')
-    parser.add_argument("-o", "--output-dir", default=default_output_dir,
-                        help="Path to output directory (default is : " +
-                            default_output_dir + ")")
-    parser.add_argument("--ami", default=default_ami_dir,
-                       help="Path to AMI directory, default: " + default_ami_dir)
-    parser.add_argument('-s', '--script', help='Specify non-standard reduction script')
+    parser.add_argument("-w", "--working-dir", default=default_output_dir,
+                        help="Top level data-output directory, default is : " +
+                            default_output_dir)
+
+    parser.add_argument('-o', '--outfile', nargs='?',
+                        help='Specify filename for output listing of calibrated '
+                             'data')
 
     parser.add_argument('groups_file', metavar='groups_to_process.json', nargs='?',
-                        help='Specify JSON file listing groups for processing '
+                        help='Specify file listing rawfiles for processing '
                              '(overrides all other file options)')
+
+    parser.add_argument("--ami", default=default_ami_dir,
+                       help="Path to AMI directory, default: " + default_ami_dir)
+
+    parser.add_argument('-s', '--script', help='Specify non-standard reduction script')
 
     parser.add_argument('-f', '--files', nargs='*',
                         help='Specify individual files for reduction')
+
     parser.add_argument('-g', '--group', dest='groupname', default='NOGROUP',
                         help='Specify group name for individually specified files')
+
     # parser.add_argument('-r', '--array', default='LA',
     #                     help='Specify array (SA/LA) for individually specified files')
 
     options = parser.parse_args()
     options.ami_dir = os.path.expanduser(options.ami)
-    options.output_dir = os.path.expanduser(options.output_dir)
+    options.working_dir = os.path.expanduser(options.working_dir)
 
     if options.script:
         with open(options.script) as f:
@@ -107,12 +113,16 @@ def main():
     options, data_groups = handle_args()
     output_preamble_to_log(data_groups)
     processed_files_info = process_data_groups(data_groups,
-                                options.output_dir,
+                                options.working_dir,
                                 options.ami_dir,
                                 array='LA',
                                 script=options.script)
-    with open('processed_files.json', 'w') as f:
-        json.dump(processed_files_info, f, sort_keys=True, indent=4)
+
+    output_listings_filepath = options.outfile
+    if output_listings_filepath is None:
+        output_listings_filepath = "calibrated_files.json"
+    with open(output_listings_filepath, 'w') as f:
+        driveami.save_calfile_listing(processed_files_info, f)
     sys.exit(0)
 
 

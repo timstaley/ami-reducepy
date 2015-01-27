@@ -1,13 +1,26 @@
 """
 Utility routines for loading and saving lists of datafiles (raw or calibrated).
 """
+from __future__ import absolute_import
 import json
+import driveami.keys as keys
 
 class Datatype:
     magic_key = '#DATATYPE'
     ami_la_raw='AMILA_RAWFILES'
     ami_la_calibrated='AMILA_CALIBRATED_UVFITS'
 
+
+datetime_format = '%Y-%m-%d %H:%M:%S'
+def make_serializable(file_info_dict):
+    """Returns a JSON serializable version of a file info dictionary.
+
+    E.g. the dict returned by the `process_rawfile` routine.
+    """
+    d = file_info_dict.copy()
+    # UTC datetime
+    d[keys.time_ut] = [t.strftime(datetime_format) for t in d[keys.time_ut]]
+    return d
 
 def save_rawfile_listing(raw_obs_groups_dict, filepointer):
     savedict = raw_obs_groups_dict.copy()

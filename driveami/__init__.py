@@ -6,26 +6,17 @@ import driveami.keys as keys
 import driveami.scripts as scripts
 from driveami.reduce import Reduce
 
-from driveami.listings import (Datatype, save_calfile_listing,
-                               save_rawfile_listing, load_listing)
+from driveami.serialization import (Datatype, make_serializable,
+                                    save_calfile_listing,save_rawfile_listing,
+                                    load_listing)
 
 logger = logging.getLogger('ami')
-
-datetime_format = '%Y-%m-%d %H:%M:%S'
 
 def ensure_dir(dirname):
     if not os.path.isdir(dirname):
         os.makedirs(dirname)
 
-def make_serializable(file_info_dict):
-    """Returns a JSON serializable version of a file info dictionary.
 
-    E.g. the dict returned by the `process_rawfile` routine.
-    """
-    d = file_info_dict.copy()
-    # UTC datetime
-    d[keys.time_ut] = [t.strftime(datetime_format) for t in d[keys.time_ut]]
-    return d
 
 def process_rawfile(rawfile, output_dir,
                     reduce,
