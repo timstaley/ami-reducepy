@@ -14,7 +14,7 @@ def handle_args():
     Default values are defined here.
     """
     parser = argparse.ArgumentParser(prog='process_ami_data.py')
-    parser.add_argument("-w", "--working-dir", default=default_output_dir,
+    parser.add_argument("-t", "--topdir", default=default_output_dir,
                         help="Top level data-output directory, default is : " +
                             default_output_dir)
 
@@ -42,7 +42,7 @@ def handle_args():
 
     options = parser.parse_args()
     options.ami_dir = os.path.expanduser(options.ami)
-    options.working_dir = os.path.expanduser(options.working_dir)
+    options.topdir = os.path.expanduser(options.topdir)
 
     if options.script:
         with open(options.script) as f:
@@ -113,7 +113,7 @@ def main():
     options, data_groups = handle_args()
     output_preamble_to_log(data_groups)
     processed_files_info = process_data_groups(data_groups,
-                                options.working_dir,
+                                options.topdir,
                                 options.ami_dir,
                                 array='LA',
                                 script=options.script)
