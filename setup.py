@@ -10,7 +10,7 @@ requirements = ['pexpect',
 
 setup(
     name="drive-ami",
-    version="0.7.1",
+    version="0.7.2",
     packages=['driveami'],
     scripts=['bin/driveami_filter_rawfile_listing.py',
              'bin/driveami_list_rawfiles.py',

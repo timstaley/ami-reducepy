@@ -18,9 +18,11 @@ def handle_args():
                         help="Top level data-output directory, default is : " +
                             default_output_dir)
 
-    parser.add_argument('-o', '--outfile', nargs='?',
+    default_outfile = "calibrated_files.json"
+
+    parser.add_argument('-o', '--outfile', nargs='?', default=default_outfile,
                         help='Specify filename for output listing of calibrated '
-                             'data')
+                             'data, default: '+default_outfile)
 
     parser.add_argument('groups_file', metavar='groups_to_process.json', nargs='?',
                         help='Specify file listing rawfiles for processing '
@@ -109,8 +111,7 @@ def process_data_groups(data_groups, output_dir, ami_dir,
     return processed_files_info
 
 
-def main():
-    options, data_groups = handle_args()
+def main(options, data_groups):
     output_preamble_to_log(data_groups)
     processed_files_info = process_data_groups(data_groups,
                                 options.topdir,
@@ -118,15 +119,13 @@ def main():
                                 array='LA',
                                 script=options.script)
 
-    output_listings_filepath = options.outfile
-    if output_listings_filepath is None:
-        output_listings_filepath = "calibrated_files.json"
-    with open(output_listings_filepath, 'w') as f:
+    with open(options.outfile, 'w') as f:
         driveami.save_calfile_listing(processed_files_info, f)
     sys.exit(0)
 
 
 if __name__ == "__main__":
+    options, data_groups = handle_args()
     logging.basicConfig(format='%(name)s:%(levelname)s:%(message)s',
                     filemode='w',
                     filename="ami-reduce.log",
@@ -136,4 +135,4 @@ if __name__ == "__main__":
     log_stdout.setLevel(logging.INFO)
     logger.addHandler(log_stdout)
 #    logging.basicConfig(level=logging.WARN)
-    main()
+    main(options, data_groups)
