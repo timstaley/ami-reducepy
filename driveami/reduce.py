@@ -85,6 +85,9 @@ class Reduce(object):
         self.array = array
         self.update_files()
 
+        self.file_log = None
+        self.file_cmd_log = None
+
     def switch_to_large_array(self):
         """NB resets file list"""
         p = self.child
@@ -363,6 +366,18 @@ class Reduce(object):
         # It does no harm to set up the loggers,
         # irrespective of whether we write them to file-
         # The calling code could potentially grab them for other uses.
+
+        #Close any logging file handlers from the last file:
+        if self.file_log is not None:
+            for hdlr in self.file_log.handlers:
+                if hasattr(hdlr, 'close'):
+                    hdlr.close()
+        if self.file_cmd_log is not None:
+            for hdlr in self.file_cmd_log.handlers:
+                if hasattr(hdlr, 'close'):
+                    hdlr.close()
+
+
         self.file_log = logging.getLogger('.'.join((logger.name, target)))
         self.file_log.propagate = False
         self.file_log.setLevel(logging.DEBUG)
