@@ -50,7 +50,8 @@ class Reduce(object):
                  ami_rootdir,
                  array='LA',
                  working_dir='/tmp',
-                 additional_env_variables=None
+                 additional_env_variables=None,
+                 timeout=600,
                  ):
         if len(ami_rootdir) > 16:
             warnings.warn("Long AMI root path detected - this may cause bugs!\n"
@@ -66,7 +67,8 @@ class Reduce(object):
             ami_env.update(additional_env_variables)
         self.child = pexpect.spawn('tcsh -c reduce',
                           cwd=self.working_dir,
-                          env=ami_env)
+                          env=ami_env,
+                          timeout=timeout)
         self.child.expect(self.prompt)
         # Records all known information about the fileset.
         # Each file entry is initialised to a ``defaultdict(lambda : None)``
