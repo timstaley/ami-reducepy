@@ -51,7 +51,7 @@ class Reduce(object):
                  array='LA',
                  working_dir='/tmp',
                  additional_env_variables=None,
-                 timeout=600,
+                 timeout=120,
                  ):
         if len(ami_rootdir) > 16:
             warnings.warn("Long AMI root path detected - this may cause bugs!\n"
