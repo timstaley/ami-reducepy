@@ -360,14 +360,8 @@ class Reduce(object):
         return pointing_groups_dict
 
 
-    def _setup_file_loggers(self, filename, file_logdir):
-#        if (self.logger is not None) or (file_logdir is not None):
-        target = os.path.splitext(filename)[0]
-        # It does no harm to set up the loggers,
-        # irrespective of whether we write them to file-
-        # The calling code could potentially grab them for other uses.
-
-        #Close any logging file handlers from the last file:
+    def close_per_file_logs(self):
+        """Close any logging file handlers from the last file"""
         if self.file_log is not None:
             for hdlr in self.file_log.handlers:
                 if hasattr(hdlr, 'close'):
@@ -377,6 +371,14 @@ class Reduce(object):
                 if hasattr(hdlr, 'close'):
                     hdlr.close()
 
+    def _setup_file_loggers(self, filename, file_logdir):
+        target = os.path.splitext(filename)[0]
+
+        self.close_per_file_logs()
+
+        # It does no harm to set up the loggers,
+        # irrespective of whether we write them to file-
+        # The calling code could potentially grab them for other uses.
 
         self.file_log = logging.getLogger('.'.join((logger.name, target)))
         self.file_log.propagate = False

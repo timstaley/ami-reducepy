@@ -4,7 +4,7 @@ import argparse
 import os
 import sys
 import logging
-import json
+import datetime
 
 import driveami
 from driveami.environments import (default_ami_dir, default_output_dir)
@@ -86,28 +86,36 @@ def process_data_groups(data_groups, output_dir, ami_dir,
     """
     if not script:
         script = driveami.scripts.standard_reduction
-    r = driveami.Reduce(ami_dir, array=array)
+
     processed_files_info = {}
     for grp_name in sorted(data_groups.keys()):
-        files = data_groups[grp_name][driveami.keys.files]
-        grp_dir = os.path.join(output_dir, grp_name, 'ami')
-        driveami.ensure_dir(grp_dir)
-        logger.info('Calibrating rawfiles and writing to {}'.format(grp_dir))
-        for rawfile in files:
-            try:
-                logger.info("Reducing rawfile %s ...", rawfile)
-                file_info = driveami.process_rawfile(rawfile,
-                                    output_dir=grp_dir,
-                                    reduce=r,
-                                    script=script)
-            except (ValueError, IOError) as e:
-                logger.exception("Hit exception reducing file: %s\n"
-                             "Exception reads:\n%s\n",
-                             rawfile, e)
-                continue
-            # Also save the group assignment in the listings:
-            file_info[driveami.keys.group_name] = grp_name
-            processed_files_info[rawfile] = driveami.make_serializable(file_info)
+
+        try:
+            r = driveami.Reduce(ami_dir, array=array)
+            files = data_groups[grp_name][driveami.keys.files]
+            grp_dir = os.path.join(output_dir, grp_name, 'ami')
+            driveami.ensure_dir(grp_dir)
+            logger.info('Calibrating rawfiles and writing to {}'.format(grp_dir))
+            for rawfile in files:
+                try:
+                    logger.info("Reducing rawfile %s ...", rawfile)
+                    file_info = driveami.process_rawfile(rawfile,
+                                        output_dir=grp_dir,
+                                        reduce=r,
+                                        script=script)
+                except (ValueError, IOError) as e:
+                    logger.exception("Hit exception reducing file: %s\n"
+                                 "Exception reads:\n%s\n",
+                                 rawfile, e)
+                    continue
+                # Also save the group assignment in the listings:
+                file_info[driveami.keys.group_name] = grp_name
+                processed_files_info[rawfile] = driveami.make_serializable(file_info)
+        except Exception as e:
+            logger.exception(
+                "Hit exception (probable timeout) reducing group: {}".format(
+                    grp_name))
+            continue
     return processed_files_info
 
 
@@ -126,9 +134,10 @@ def main(options, data_groups):
 
 if __name__ == "__main__":
     options, data_groups = handle_args()
+    timestamp = datetime.datetime.now().strftime("%y-%m-%dT%H%M%S")
     logging.basicConfig(format='%(name)s:%(levelname)s:%(message)s',
                     filemode='w',
-                    filename="ami-reduce.log",
+                    filename="driveami_calibrate_log_{}".format(timestamp),
                     level=logging.DEBUG)
     logger = logging.getLogger()
     log_stdout = logging.StreamHandler(sys.stdout)
