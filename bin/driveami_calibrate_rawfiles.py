@@ -13,7 +13,8 @@ def handle_args():
     """
     Default values are defined here.
     """
-    parser = argparse.ArgumentParser(prog='process_ami_data.py')
+    parser = argparse.ArgumentParser(
+        description="Calibrate raw AMI data and produce uvFITs")
     parser.add_argument("-t", "--topdir", default=default_output_dir,
                         help="Top level data-output directory, default is : " +
                             default_output_dir)

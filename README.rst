@@ -7,6 +7,7 @@ For a full description, see `Staley and Anderson`_ (in prep).
 If you use drive-ami in work leading to a publication, we ask that you cite 
 the paper above, and the relevant `ASCL entry`_.
 
+.. _AMI: http://www.mrao.cam.ac.uk/telescopes/ami/
 .. _Staley and Anderson: https://github.com/timstaley/automated-radio-imaging-paper
 .. _ASCL entry: http://ascl.net/1502.017
 
@@ -56,7 +57,7 @@ Installation
  - You will need a working installation of AMI-reduce (naturally)
  - `pexpect <http://pypi.python.org/pypi/pexpect/>`_ For interfacing with AMI-reduce.
    (Installed automatically as part of the python setup.) 
- - `astropysics <http://packages.python.org/Astropysics/>`_ Used for calculating
+ - `astropy <http://astropy.org/>`_ Used for calculating
    co-ordinate distances, etc.
    (Installed automatically as part of the python setup.)
    
@@ -69,53 +70,19 @@ From the command line (preferably within a virtualenv)::
 
 Usage
 -----
-*Quickstart*
 
-The script 'process_ami_data' can be used for easy reduction of multiple files.
-Try::
+Command-line scripts are installed along with the package. 
+Their sourcefiles can be found at https://github.com/timstaley/drive-ami/tree/master/bin.
+For full details, run e.g.::
 
- ./process_ami_data.py --help
+    driveami_list_rawfiles.py -h
 
-*Details*
+Where ``-h`` is short for 'help'.
 
-The class ``ami.Reduce`` provides an easily scriptable interface to the ``reduce`` pipeline.
-At this stage I haven't documented it, but in the meantime you can get started 
-with the example scripts described below.
-(Of course at <500 lines, the source code is pretty easy to dive into and get aquainted with).
+Typical usage is to run ``driveami_list_rawfiles.py`` to build a full
+listing of available data, followed by ``driveami_filter_rawfile_listing.py`` 
+to extract the entries on a desired target. 
+Finally, ``driveami_calibrate_rawfiles.py`` actually does the processing using 
+AMI-REDUCE.
 
-First try::
 
- ./list_ami_datasets.py --help
-
-to see your options. 
-Unless you edit the defaults in the script, or happen to have an ami installation 
-under */opt/ami*, then you will probably want to run::
-
- ./list_ami_datasets.py --ami-dir=/path/to/ami
-
-By default, this will output a JSON file listing dataset groupings, 
-to *datasets.json*.
-This file has a very simple structure - the first element is a string 
-representing the array type ('LA' or 'SA'), 
-and after that comes a nested dictionary representing the dataset file groups.
-You should copy this file to e.g. *files_to_process.json* and then 
-edit the nested dictionaries to leave just the files you wish to process.
-Note that the key to each dictionary entry represents the group name, 
-which will be used to create subfolders to group your results together. 
-By default ``list_ami_datasets`` guesses the groupname from the file names, 
-but you can change it to whatever you like.
-`When editing a JSON file, be careful to match your brackets and mind your commas!`
-
-Now you have a target list, try ``./process_ami_data.py --help``.
-After a careful inspection, you'll probably want to try something like::
-
- ./process_ami_data.py --ami-dir=/path/to/ami  files_to_process.json
-
-While that's churning, you can follow the newly created file ``ami-reduce.log``.
-Per-file logs will also be created alongside the output UVFITS files.
-
-To Do:
-------
-- Output full listings along with dataset groupings.
-
-.. _AMI: http://www.mrao.cam.ac.uk/telescopes/ami/
