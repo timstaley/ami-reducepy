@@ -15,7 +15,7 @@ the underlying fortran code, but this is a reasonably good quick solution.
 # which means 'use defaults'.
 # Unfortunately, this is also the python string escape character.
 # So I often use raw strings to make it clear what is being sent.
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import os
 import shutil
 import pexpect
@@ -53,6 +53,14 @@ class Reduce(object):
                  additional_env_variables=None,
                  timeout=120,
                  ):
+        """
+        Spawn an AMI-REDUCE instance.
+
+        This will automatically update the list of available files,
+        but will not load the full info for each file, as this is time consuming.
+        (See :py:func:`load_obs_info`.)
+
+        """
         if len(ami_rootdir) > 16:
             warnings.warn("Long AMI root path detected - this may cause bugs!\n"
                           "It is recommended to use a short symlink instead.\n")
@@ -123,19 +131,35 @@ class Reduce(object):
                 if len(cols) > 1:
                     self.files[fname][keys.comment] = cols[1]
 
-    def get_obs_details(self, filename):
+    def get_obs_details(self, filename, incomplete=False):
         p = self.child
-        p.sendline(r'list observation {0} \ '.format(filename))
-        p.expect(self.prompt)
-        obs_lines = p.before.split('\n')[2:]
+        if not incomplete:
+            p.sendline(r'list observation {0} \ '.format(filename))
+            p.expect(self.prompt)
+        else: #incomplete observation, load fully to check end-timetamp:
+            if not self.active_file==filename:
+                self.set_active_file(filename)
+            p.sendline(r'show observation \ ')
+            p.expect(self.prompt)
+        obs_lines = p.before.decode('ascii').split('\n')[2:]
         info = self.files[filename]
+        if incomplete:
+            warnings_dict = info.setdefault(keys.warnings, {})
+            warnings_dict[keys.warning_incomplete]=True
 
+        info[keys.raw_obs_text] = p.before
         hms_dms = Reduce._parse_coords(filename, obs_lines)
         info[keys.pointing_hms_dms] = hms_dms
         info[keys.pointing_degrees] = Reduce._convert_to_decimal_degrees(hms_dms)
         info[keys.calibrator] = Reduce._parse_calibrator(obs_lines)
         info[keys.field] = Reduce._parse_field(obs_lines)
         info.update(Reduce._parse_obs_datetime(obs_lines))
+        if (info[keys.duration]==0.0 and not incomplete):
+            logger.warn(
+                "Incomplete obs ({}), pulling timestamps from filedata".format(
+                    filename))
+            self.get_obs_details(filename,incomplete=True)
+
         return info
 
     @staticmethod
@@ -224,13 +248,13 @@ class Reduce(object):
     def load_obs_info(self):
         logger.info("Loading observation information, patience...")
         self.update_files()
-        for filename, info in self.files.iteritems():
+        for filename, info in sorted(self.files.items()):
             if info.get(keys.pointing_degrees,None) is None:
                 logger.debug("Getting obs info for %s", filename)
                 try:
                     self.get_obs_details(filename)
                 except Exception as error:
-                    logger.error("\n"
+                    logger.exception("\n"
                                  "**********************\n"
                                  "Warning! Threw an exception trying to parse "
                                  "details for %s"
@@ -301,27 +325,36 @@ class Reduce(object):
         }
         """
 
-        def _find_close_targets(first_target_id, ungrouped, skycoords,
+        def _find_close_targets(first_target_id, ungrouped, skycoords_cache,
                                tolerance_deg):
+            """
+            Grow a network graph to include all points separated by less than
+            'tolerance_deg'.
+
+            Given a starting point ('first_target_id', and a bunch of
+            un-matched positions ('ungrouped'), work through checking for
+            close positions. Once a new network node has been added,
+            re-run to see if this puts us close enough to another point.
+            """
             logger.debug("Finding observations near "+first_target_id+" ... ")
             cluster_ids = [first_target_id]
 
             # Take the list of positions belonging to the current group
             # Split it into three lists, to avoid modifying the list as we
             # iterate over it:
-            # Positions we've already scanned for matches
+            # Cluster positions we've already scanned for matches previously
             processed = []
             # Positions we're about to scan for matches:
-            process_next = [skycoords[first_target_id]]
+            process_next = [skycoords_cache[first_target_id]]
             # Newly added positions that could extend the cluster in the next
             # iteration:
             newly_included = []
+
             while process_next:
                 for pointing1 in process_next:
                     for id2 in list(ungrouped):
-                        pointing2 = skycoords[id2]
-                        if pointing1.separation(
-                                pointing2).degree < tolerance_deg:
+                        pointing2 = skycoords_cache[id2]
+                        if pointing1.separation(pointing2).degree < tolerance_deg:
                             cluster_ids.append(id2)
                             newly_included.append(pointing2)
                             ungrouped.remove(id2)
@@ -335,6 +368,8 @@ class Reduce(object):
 
 
         ungrouped = set(target_id_groups.keys())
+        # Cache a pre-built set of Astropy SkyCoord objects, one for each id
+        # This avoids constantly rebuilding as we iterate through.
         temp_skycoords = {}
         for id in ungrouped:
             ra_dec = target_id_groups[id][keys.target_pointing_deg]
@@ -342,12 +377,11 @@ class Reduce(object):
 
         pointing_groups_dict = {}
 
+        #Now, pop off un-searched IDs and match them up, one-by-one until done
         while ungrouped:
-
             cluster_ids = _find_close_targets(ungrouped.pop(), ungrouped,
                                               temp_skycoords,
                                               pointing_tolerance_in_degrees)
-
             first_id = sorted(cluster_ids)[0]
             pointing_groups_dict[first_id] = {}
             pointing_groups_dict[first_id][keys.target_pointing_deg]=(
@@ -485,8 +519,16 @@ class Reduce(object):
         filename = filename.strip()  # Ensure no stray whitespace
         self.active_file = filename
         self._setup_file_loggers(filename, file_logdir)
-        self.run_command(r'file %s \ ' % filename)
-        self.get_obs_details(filename)
+        file_listing = self.run_command(r'file %s \ ' % filename)
+        incomplete_obs = False
+        for line in file_listing:
+            if 'incomplete observation' in line:
+                incomplete_obs = True
+
+        if incomplete_obs:
+            self.get_obs_details(filename, incomplete=True)
+        else:
+            self.get_obs_details(filename, incomplete=False)
         logger.debug('Active file: %s', filename)
 
 

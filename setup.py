@@ -4,13 +4,14 @@ from setuptools import setup
 
 
 requirements = ['pexpect',
-                'astropy'
+                'astropy',
+                'colorlog',
 ]
 
 
 setup(
     name="drive-ami",
-    version="0.7.8",
+    version="0.8.0",
     packages=['driveami'],
     scripts=['bin/driveami_filter_rawfile_listing.py',
              'bin/driveami_list_rawfiles.py',

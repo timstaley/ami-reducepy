@@ -1,16 +1,16 @@
 #!/usr/bin/env python
-
 """
 Groups AMI datasets by pointing direction,
 then dumps them in JSON format.
 """
+from __future__ import print_function
 import json
 import argparse
 import sys
+import driveami
 
 import logging
 logging.basicConfig(level=logging.DEBUG)
-import driveami
 
 
 def handle_args():
@@ -44,12 +44,13 @@ def main():
                 break
 
     if len(matching_datasets)==0:
-        print "No matches found"
+        print("No matches found")
         return 1
 
     if options.outfile is None:
         options.outfile = options.match+"_rawfiles.json"
-    print'Datasets matching "{}" written to'.format(options.match),options.outfile
+    print('Datasets matching "{}" written to'.format(options.match),
+          options.outfile)
     with open(options.outfile, 'w') as f:
         driveami.save_rawfile_listing(matching_datasets, f)
 

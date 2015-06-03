@@ -2,6 +2,7 @@ from __future__ import absolute_import
 import logging
 import os
 import json
+from colorlog import ColoredFormatter
 import driveami.keys as keys
 import driveami.scripts as scripts
 from driveami.reduce import Reduce
@@ -15,7 +16,6 @@ logger = logging.getLogger('ami')
 def ensure_dir(dirname):
     if not os.path.isdir(dirname):
         os.makedirs(dirname)
-
 
 
 def process_rawfile(rawfile, output_dir,
@@ -53,3 +53,26 @@ def process_rawfile(rawfile, output_dir,
         json.dump(make_serializable(r.files[rawfile]), f,
                   sort_keys=True, indent=4)
     return r.files[rawfile]
+
+
+def get_color_log_formatter():
+    date_fmt = "%y-%m-%d (%a) %H:%M:%S"
+    color_formatter = ColoredFormatter(
+            "%(log_color)s%(asctime)s:%(levelname)-8s%(reset)s %(blue)s%(message)s",
+            datefmt=date_fmt,
+            reset=True,
+            log_colors={
+                    'DEBUG':    'cyan',
+                    'INFO':     'green',
+                    'WARNING':  'yellow',
+                    'ERROR':    'red',
+                    'CRITICAL': 'red',
+            }
+    )
+    return color_formatter
+
+def get_color_stdout_loghandler(level):
+    stdout_loghandler = logging.StreamHandler()
+    stdout_loghandler.setFormatter(get_color_log_formatter())
+    stdout_loghandler.setLevel(level)
+    return stdout_loghandler

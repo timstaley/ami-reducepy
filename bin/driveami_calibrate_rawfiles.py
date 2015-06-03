@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+from __future__ import print_function
 import argparse
 import os
 import sys
@@ -52,7 +52,7 @@ def handle_args():
             options.script = f.read()
 
     if options.groups_file:
-        print "Reducing files listed in:", options.groups_file
+        print("Reducing files listed in:", options.groups_file)
         with open(options.groups_file) as f:
             data_groups, _ = driveami.load_listing(f,
                                expected_datatype=driveami.Datatype.ami_la_raw)
@@ -141,8 +141,6 @@ if __name__ == "__main__":
                     filename="driveami_calibrate_log_{}".format(timestamp),
                     level=logging.DEBUG)
     logger = logging.getLogger()
-    log_stdout = logging.StreamHandler(sys.stdout)
-    log_stdout.setLevel(logging.INFO)
-    logger.addHandler(log_stdout)
+    logger.addHandler(driveami.get_color_stdout_loghandler(logging.INFO))
 #    logging.basicConfig(level=logging.WARN)
     main(options, data_groups)

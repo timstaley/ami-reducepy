@@ -4,19 +4,16 @@
 Groups AMI datasets by pointing direction,
 then dumps them in JSON format.
 """
-import json
 import argparse
 import sys
-import os
-
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
 import driveami
 from driveami.environments import default_ami_dir
 
-logger = logging.getLogger("list_ami_datasets")
-
+logger=logging.getLogger()
+logger.setLevel(logging.DEBUG)
+logger.addHandler(driveami.get_color_stdout_loghandler(logging.DEBUG))
 
 def handle_args():
     default_array = 'LA'
@@ -40,7 +37,8 @@ def handle_args():
                              + default_full_listings_filename)
 
     args = parser.parse_args()
-    print "Will output listings of all datasets to :", args.outfile
+    logger.info("Will output listings of all datasets to '{}'".format(
+                                                                args.outfile))
     return args
 
 
@@ -48,6 +46,7 @@ def main():
     options = handle_args()
     grouped_by_id_filename = options.outfile + '_by_id.json'
     grouped_by_pointing_filename = options.outfile + '_by_pointing.json'
+    metadata_filename = options.outfile + '_metadata.json'
 
     r = driveami.Reduce(options.ami, options.array)
     logger.info("Loading observation metadata.")
@@ -61,6 +60,11 @@ def main():
                                                      pointing_tolerance_in_degrees=0.5)
     with open(grouped_by_pointing_filename, 'w') as f:
         driveami.save_rawfile_listing(pointing_groups, f)
+
+    with open(metadata_filename, 'w') as f:
+        rawfile_dict = { fname:driveami.make_serializable(info) for fname, info
+                         in r.files.iteritems()}
+        driveami.save_rawfile_listing(rawfile_dict, f)
 
     return 0
 
