@@ -27,7 +27,7 @@ class TestFileListing(TestCase):
         rawfile_dict = { fname:driveami.make_serializable(info) for fname, info
                          in self.reduce.files.iteritems()}
         driveami.save_rawfile_listing(rawfile_dict, s)
-        print(s.getvalue())
+        # print(s.getvalue())
 
 
 class TestRegularFileInfo(TestCase):
