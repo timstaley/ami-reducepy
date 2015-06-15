@@ -10,7 +10,9 @@ logging.basicConfig(level=logging.DEBUG)
 
 class TestListingSerialization(TestCase):
     def setUp(self):
-        self.testdata = {'foo':['bar','baz']}
+        self.testdata = {'foo1':{'bar':'baz1'},
+                         'foo2':{'bar':'baz2'},
+                         }
 
     def test_check_for_magic_key(self):
         s = StringIO()

@@ -28,8 +28,12 @@ def save_rawfile_listing(raw_obs_groups_dict, filepointer):
     json.dump(savedict, filepointer,
                   sort_keys=True, indent=4)
 
-def save_calfile_listing(list_of_calobs, filepointer):
+def save_calfile_listing(list_of_calobs, filepointer,
+                         keep_rawtext=False):
     savedict = list_of_calobs.copy()
+    if not keep_rawtext:
+        for obs_id, obs_dict in list_of_calobs.iteritems():
+            obs_dict.pop(keys.raw_obs_text, None)
     savedict[Datatype.magic_key] = Datatype.ami_la_calibrated
     json.dump(savedict, filepointer,
               sort_keys=True, indent=4)
