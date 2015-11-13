@@ -60,12 +60,14 @@ flag amp  no 0.075 1 yes \
 scan dat yes \
 show flagging no yes \
 """
-# NB second arg refers to 'update entry in observation database'
+# NB 'no' arg refers to 'update entry in observation database'
 # I currently know of no use cases for that to be 'yes'.
-write_command=\
-r'write fits {if_severely_flagged} no {baselines} {channels} {sample_range} {output_paths} \  '
+write_command = \
+    r'write {fits_or_multi} {if_severely_flagged} no {offsets} {baselines} {channels} {sample_range} {output_paths}\\'
 
-write_command_defaults = {'if_severely_flagged':'yes',
-                          'baselines':'all',
-                          'channels':'3-8',
-                          'sample_range':'all'}
+write_command_defaults = {'fits_or_multi': 'fits',
+                          'if_severely_flagged': 'yes',
+                          'offsets': '',
+                          'baselines': 'all',
+                          'channels': '3-8',
+                          'sample_range': 'all', }
