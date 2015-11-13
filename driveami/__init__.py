@@ -45,7 +45,11 @@ def process_rawfile(rawfile, output_dir,
     r.set_active_file(rawfile, file_logdir)
     r.run_script(script)
     r.update_flagging_info()
-    r.write_files(rawfile, output_dir,
+    if 'raster' in r.get_obs_details(rawfile)['raw_obs_listing_text']:
+        r.write_files(rawfile, output_dir,
+                  write_command_overrides={'channels':'3-8', 'fits_or_multi':'multi','offsets':'all','return_char':'\\'}) # This has been edited!
+    else:
+        r.write_files(rawfile, output_dir,
                   write_command_overrides={'channels':'3-8'})
 
     r.files[rawfile][keys.obs_name] = os.path.splitext(rawfile)[0]
