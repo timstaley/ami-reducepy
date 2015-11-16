@@ -147,6 +147,7 @@ class Reduce(object):
             warnings_dict[keys.warning_incomplete] = True
 
         info[keys.raw_obs_text] = p.before
+        info[keys.raster] = Reduce._parse_raster(obs_lines)
         hms_dms = Reduce._parse_coords(filename, obs_lines)
         info[keys.pointing_hms_dms] = hms_dms
         info[keys.pointing_degrees] = Reduce._convert_to_decimal_degrees(
@@ -565,6 +566,12 @@ class Reduce(object):
         raise ValueError("Parsing error, could not find rain modulation.")
 
 
+    @staticmethod
+    def _parse_raster(obs_listing):
+        for line in obs_listing:
+            if 'raster' in line:
+                return True
+        return False
 
 
     def _parse_reweight_results(self, output_lines):

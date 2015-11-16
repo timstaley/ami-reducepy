@@ -8,10 +8,11 @@ import driveami.scripts as scripts
 from driveami.reduce import Reduce
 
 from driveami.serialization import (Datatype, make_serializable,
-                                    save_calfile_listing,save_rawfile_listing,
+                                    save_calfile_listing, save_rawfile_listing,
                                     load_listing)
 
 logger = logging.getLogger('ami')
+
 
 def ensure_dir(dirname):
     if not os.path.isdir(dirname):
@@ -45,8 +46,13 @@ def process_rawfile(rawfile, output_dir,
     r.set_active_file(rawfile, file_logdir)
     r.run_script(script)
     r.update_flagging_info()
+    write_command_overrides = {'channels': '3-8'}
+    if r.files[rawfile]['raster']:
+        write_command_overrides['fits_or_multi'] = 'multi'
+        write_command_overrides['offsets'] = 'all'
+
     r.write_files(rawfile, output_dir,
-                  write_command_overrides={'channels':'3-8'})
+                  write_command_overrides=write_command_overrides)
 
     r.files[rawfile][keys.obs_name] = os.path.splitext(rawfile)[0]
     info_filename = os.path.splitext(rawfile)[0] + '.json'
@@ -59,18 +65,19 @@ def process_rawfile(rawfile, output_dir,
 def get_color_log_formatter():
     date_fmt = "%y-%m-%d (%a) %H:%M:%S"
     color_formatter = ColoredFormatter(
-            "%(log_color)s%(asctime)s:%(levelname)-8s%(reset)s %(blue)s%(message)s",
-            datefmt=date_fmt,
-            reset=True,
-            log_colors={
-                    'DEBUG':    'cyan',
-                    'INFO':     'green',
-                    'WARNING':  'yellow',
-                    'ERROR':    'red',
-                    'CRITICAL': 'red',
-            }
+        "%(log_color)s%(asctime)s:%(levelname)-8s%(reset)s %(blue)s%(message)s",
+        datefmt=date_fmt,
+        reset=True,
+        log_colors={
+            'DEBUG': 'cyan',
+            'INFO': 'green',
+            'WARNING': 'yellow',
+            'ERROR': 'red',
+            'CRITICAL': 'red',
+        }
     )
     return color_formatter
+
 
 def get_color_stdout_loghandler(level):
     stdout_loghandler = logging.StreamHandler()
