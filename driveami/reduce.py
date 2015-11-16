@@ -367,8 +367,12 @@ class Reduce(object):
 
     def run_command(self, command):
         self.file_cmd_log.debug(command)
-        self.child.sendline(command)
-        self.child.expect(self.prompt)
+        try:
+            self.child.sendline(command)
+            self.child.expect(self.prompt)
+        except:
+            logger.error("Exception running command '{}'".format(command))
+            raise
         self.file_log.debug('%s%s', self.prompt, self.child.before)
         self._parse_command_output(command, self.child.before.split('\n'))
         return self.child.before.split('\n')
