@@ -47,6 +47,7 @@ def process_rawfile(rawfile, output_dir,
     r.update_flagging_info()
     r.write_files(rawfile, output_dir,
                   write_command_overrides={'channels':'3-8'})
+
     r.files[rawfile][keys.obs_name] = os.path.splitext(rawfile)[0]
     info_filename = os.path.splitext(rawfile)[0] + '.json'
     with open(os.path.join(output_dir, info_filename), 'w') as f:
