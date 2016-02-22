@@ -12,6 +12,8 @@ are handy when defining multiple environments.
 import os
 
 default_ami_dir = os.environ.get('AMI_DIR',os.path.expanduser("~/ami"))
+#ami_version, can be 'digital' or 'legacy':
+default_ami_version = os.environ.get('AMI_VERSION', "digital")
 default_output_dir = os.environ.get('AMI_RESULTS',
                                    os.path.expanduser("~/ami_results"))
 

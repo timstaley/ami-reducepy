@@ -1,4 +1,4 @@
-standard_reduction = \
+standard_legacy_reduction = \
 r"""
 version
 flag all
@@ -30,7 +30,23 @@ scan dat field yes \
 show flagging no yes \
 """
 
-no_calibrator_reduction = \
+standard_digital_reduction = \
+r"""
+version
+flag all
+flag rain \
+update pcal \
+apply pcal \
+flag amp field yes no 1 \
+apply rain \
+cal inter y n \
+set channels all \
+scan dat cal yes yes \
+scan dat field yes yes \
+show flagging no yes \
+"""
+
+no_calibrator_legacy_reduction = \
 r"""
 version
 flag all
@@ -69,5 +85,5 @@ write_command_defaults = {'fits_or_multi': 'fits',
                           'if_severely_flagged': 'yes',
                           'offsets': '',
                           'baselines': 'all',
-                          'channels': '3-8',
+                          'channels': 'all',
                           'sample_range': 'all', }

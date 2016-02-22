@@ -45,10 +45,13 @@ def ensure_dir(dirname):
 
 class Reduce(object):
     """Class to provide an interface to AMI-reduce package"""
-    prompt = 'AMI-reduce>'
+    legacy_prompt = 'AMI-reduce>'
+    #New version of REDUCE for use with digital correlator data:
+    dc_prompt = 'AMIDC-reduce>'
 
     def __init__(self,
                  ami_rootdir,
+                 ami_version,
                  array='LA',
                  working_dir='/tmp',
                  additional_env_variables=None,
@@ -62,23 +65,37 @@ class Reduce(object):
         (See :py:func:`load_obs_info`.)
 
         """
+        self.ami_version = ami_version
+        if ami_version == 'digital':
+            self.reduce_binary = 'reduce_dc'
+            self.prompt = self.dc_prompt
+        elif ami_version == 'legacy':
+            self.reduce_binary = 'reduce'
+            self.prompt = self.legacy_prompt
+
+        else:
+            raise RuntimeError("Unrecognised 'reduce' binary name supplied; "
+                               "unclear which command line prompt to expect")
+
         if len(ami_rootdir) > 16:
             warnings.warn("Long AMI root path detected - this may cause bugs!\n"
                           "It is recommended to use a short symlink instead.\n")
         if working_dir is None:
             working_dir = ami_rootdir
-        if not os.access(os.path.join(ami_rootdir, 'bin', 'reduce'), os.R_OK):
+        if not os.access(os.path.join(ami_rootdir, 'bin', self.reduce_binary), os.R_OK):
             raise IOError("Cannot access ami-reduce binary at: " +
-                          os.path.join(ami_rootdir, 'bin', 'reduce'))
+                          os.path.join(ami_rootdir, 'bin', self.reduce_binary))
         self.working_dir = working_dir
         ami_env = init_ami_env(ami_rootdir)
         if additional_env_variables is not None:
             ami_env.update(additional_env_variables)
-        self.child = pexpect.spawn('tcsh -c reduce',
+        logger.debug("Spawning instance of "+self.reduce_binary+"...")
+        self.child = pexpect.spawn('tcsh -c '+ self.reduce_binary,
                                    cwd=self.working_dir,
                                    env=ami_env,
                                    timeout=timeout)
         self.child.expect(self.prompt)
+        logger.debug("...success.")
         # Records all known information about the fileset.
         self.files = dict()
         # Used for updating the relevant record in self.files, also logging:

@@ -28,7 +28,7 @@ def ensure_dir(dirname):
 def process_rawfile(rawfile, output_dir,
                     reduce,
                     file_logging=True,
-                    script=scripts.standard_reduction):
+                    script=scripts.standard_legacy_reduction):
     """
     A convenience function applying sensible defaults to reduce a rawfile.
 
@@ -52,7 +52,9 @@ def process_rawfile(rawfile, output_dir,
     r.set_active_file(rawfile, file_logdir)
     r.run_script(script)
     r.update_flagging_info()
-    write_command_overrides = {'channels': '3-8'}
+    write_command_overrides = {}
+    if r.ami_version=='legacy':
+        write_command_overrides['channels'] = '3-8'
     if r.files[rawfile]['raster']:
         write_command_overrides['fits_or_multi'] = 'multi'
         write_command_overrides['offsets'] = 'all'

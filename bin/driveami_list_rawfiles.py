@@ -9,11 +9,12 @@ import sys
 import logging
 
 import driveami
-from driveami.environments import default_ami_dir
+from driveami.environments import (default_ami_dir, default_ami_version)
 
-logger=logging.getLogger()
+logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 logger.addHandler(driveami.get_color_stdout_loghandler(logging.DEBUG))
+
 
 def handle_args():
     default_array = 'LA'
@@ -22,8 +23,13 @@ def handle_args():
     parser = argparse.ArgumentParser(
         description="Generate listings for raw AMI data")
 
-    parser.add_argument("--ami", default=default_ami_dir,
+    parser.add_argument("--amidir", default=default_ami_dir,
                         help="Path to AMI directory, default: " + default_ami_dir)
+
+    parser.add_argument(
+        "--amiversion", default=default_ami_version,
+        help="AMI version (digital/legacy), default: " + default_ami_version,
+        choices=['digital', 'legacy'])
 
     parser.add_argument("--array", default=default_array,
                         help="Array data to work with (SA/LA), defaults to: "
@@ -38,7 +44,7 @@ def handle_args():
 
     args = parser.parse_args()
     logger.info("Will output listings of all datasets to '{}'".format(
-                                                                args.outfile))
+        args.outfile))
     return args
 
 
@@ -48,7 +54,7 @@ def main():
     grouped_by_pointing_filename = options.outfile + '_by_pointing.json'
     metadata_filename = options.outfile + '_metadata.json'
 
-    r = driveami.Reduce(options.ami, options.array)
+    r = driveami.Reduce(options.amidir, options.amiversion, options.array)
     logger.info("Loading observation metadata.")
     r.load_obs_info()
     logger.info("Grouping observations by target ID")
@@ -62,8 +68,8 @@ def main():
         driveami.save_rawfile_listing(pointing_groups, f)
 
     with open(metadata_filename, 'w') as f:
-        rawfile_dict = { fname:driveami.make_serializable(info) for fname, info
-                         in r.files.iteritems()}
+        rawfile_dict = {fname: driveami.make_serializable(info) for fname, info
+                        in r.files.iteritems()}
         driveami.save_rawfile_listing(rawfile_dict, f)
 
     return 0
