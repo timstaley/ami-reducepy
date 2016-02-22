@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from setuptools import setup
-
+import versioneer
 
 requirements = ['pexpect',
                 'astropy',
@@ -11,7 +11,8 @@ requirements = ['pexpect',
 
 setup(
     name="drive-ami",
-    version="0.9.1",
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
     packages=['driveami'],
     scripts=['bin/driveami_filter_rawfile_listing.py',
              'bin/driveami_list_rawfiles.py',

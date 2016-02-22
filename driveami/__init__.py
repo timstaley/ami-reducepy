@@ -11,6 +11,12 @@ from driveami.serialization import (Datatype, make_serializable,
                                     save_calfile_listing, save_rawfile_listing,
                                     load_listing)
 
+
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions
+
+
 logger = logging.getLogger('ami')
 
 
