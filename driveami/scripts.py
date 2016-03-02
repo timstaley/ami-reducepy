@@ -40,6 +40,7 @@ apply pcal \
 flag amp field yes no 1 \
 apply rain \
 cal inter y n \
+reweight \
 set channels all \
 scan dat cal yes yes \
 scan dat field yes yes \

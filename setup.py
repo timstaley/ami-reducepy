@@ -3,7 +3,7 @@
 from setuptools import setup
 import versioneer
 
-requirements = ['pexpect',
+requirements = ['pexpect>=4.0.1',
                 'astropy',
                 'colorlog',
 ]
