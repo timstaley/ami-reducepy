@@ -116,6 +116,13 @@ class Reduce(object):
         self.file_log = None
         self.file_cmd_log = None
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.child.sendline('exit')
+        self.child.close()
+
     def switch_to_large_array(self):
         """NB resets file list"""
         p = self.child
