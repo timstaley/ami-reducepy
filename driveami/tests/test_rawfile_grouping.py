@@ -14,6 +14,7 @@ class TestGrouping(TestCase):
     def setUp(self):
         env_extras = resources.setup_testdata_symlink()
         self.reduce = driveami.Reduce(ami_rootdir=resources.ami_rootdir,
+                                      ami_version=driveami.AmiVersion.legacy,
                                       additional_env_variables=env_extras)
         with open(resources.file_info_dump) as f:
             file_info_data = pickle.load(f)

@@ -42,6 +42,10 @@ def ensure_dir(dirname):
     if not os.path.isdir(dirname):
         os.makedirs(dirname)
 
+class AmiVersion:
+    legacy = 'legacy'
+    digital = 'digital'
+
 
 class Reduce(object):
     """Class to provide an interface to AMI-reduce package"""
@@ -66,10 +70,10 @@ class Reduce(object):
 
         """
         self.ami_version = ami_version
-        if ami_version == 'digital':
+        if ami_version == AmiVersion.digital:
             self.reduce_binary = 'reduce_dc'
             self.prompt = self.dc_prompt
-        elif ami_version == 'legacy':
+        elif ami_version == AmiVersion.legacy:
             self.reduce_binary = 'reduce'
             self.prompt = self.legacy_prompt
 

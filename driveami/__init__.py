@@ -5,7 +5,7 @@ import json
 from colorlog import ColoredFormatter
 import driveami.keys as keys
 import driveami.scripts as scripts
-from driveami.reduce import Reduce
+from driveami.reduce import (Reduce, AmiVersion)
 
 from driveami.serialization import (Datatype, make_serializable,
                                     save_calfile_listing, save_rawfile_listing,
@@ -27,8 +27,9 @@ def ensure_dir(dirname):
 
 def process_rawfile(rawfile, output_dir,
                     reduce,
-                    file_logging=True,
-                    script=scripts.standard_legacy_reduction):
+                    script,
+                    file_logging=True
+                    ):
     """
     A convenience function applying sensible defaults to reduce a rawfile.
 
