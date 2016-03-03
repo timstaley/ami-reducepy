@@ -505,6 +505,11 @@ class Reduce(object):
         if 'apply rain' in command:
             rain_amp_corr = self._parse_rain_results(output_lines)
             file_info[keys.rain] = rain_amp_corr
+            if rain_amp_corr is None:
+                logger.warning(
+                    "Could not parse rain modulation for {}.".format(
+                        self.active_file
+                    ))
         # logger.info("Rain mean amplitude correction factor: %s",
         #                             rain_amp_corr)
         if 'flag' in command:
@@ -595,7 +600,7 @@ class Reduce(object):
         for line in output_lines:
             if "Mean amplitude correction factor" in line:
                 return float(line.strip().split()[-1])
-        raise ValueError("Parsing error, could not find rain modulation.")
+        return None
 
 
     @staticmethod
