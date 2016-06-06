@@ -3,12 +3,12 @@ drive-ami
 ============
 A python package for scripting the AMI_-reduce pipeline.
 
-For a full description, see `Staley and Anderson`_ (in prep). 
+For a full description, see `Staley and Anderson (2015)`_. 
 If you use drive-ami in work leading to a publication, we ask that you cite 
 the paper above, and the relevant `ASCL entry`_.
 
 .. _AMI: http://www.mrao.cam.ac.uk/telescopes/ami/
-.. _Staley and Anderson: https://github.com/timstaley/automated-radio-imaging-paper
+.. _Staley and Anderson (2015): https://github.com/timstaley/automated-radio-imaging-paper
 .. _ASCL entry: http://ascl.net/1502.017
 
 
