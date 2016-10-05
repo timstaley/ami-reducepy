@@ -141,10 +141,13 @@ class Reduce(object):
         file_lines = p.before.split('\n')[2:-4]
         for l in file_lines:
             l = l.strip('\r').strip(' ')
-            cols = l.split(' ', 1)
-            fname = cols[0]
-            if fname not in self.files:
-                self.files[fname] = {}
+            # Occasionally we get a junk, single-char line, due to
+            # misformatted comments. Ignore those:
+            if len(l) > 12:
+                cols = l.split(' ', 1)
+                fname = cols[0]
+                if fname not in self.files:
+                    self.files[fname] = {}
 
         p.sendline(r'list comment \ ')
         #        p.sendline(r'list comment \ ')
