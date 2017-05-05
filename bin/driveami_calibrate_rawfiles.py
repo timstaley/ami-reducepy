@@ -1,47 +1,64 @@
 #!/usr/bin/env python
 from __future__ import print_function
+
 import argparse
+import datetime
+import logging
 import os
 import sys
-import logging
-import datetime
 
 import driveami
 from driveami.environments import (
     default_ami_dir, default_ami_version, default_output_dir)
+
+_DESCRIPTION = """
+Calibrate raw AMI data and produce uvFITs.
+
+This will load up the AMI-REDUCE environment
+and apply the same reduction script to all listed files, outputting to 
+group directories. (See `scripts.py` in source for default scripts.)
+
+Filenames can be supplied via a grouped-file JSON listing, or specified 
+explicitly on the command line (see `-f/--files` option).
+
+A listing of the calibrated output files is produced,
+which can then be passed on to (e.g.) imaging scripts.
+
+
+"""
 
 
 def handle_args():
     """
     Default values are defined here.
     """
-    parser = argparse.ArgumentParser(
-        description="Calibrate raw AMI data and produce uvFITs")
-    parser.add_argument("-t", "--topdir", default=default_output_dir,
-                        help="Top level data-output directory, default is : " +
-                             default_output_dir)
-
     default_outfile = "calibrated_files.json"
 
-    parser.add_argument('-o', '--outfile', nargs='?', default=default_outfile,
-                        help='Specify filename for output listing of calibrated '
-                             'data, default: ' + default_outfile)
-
+    parser = argparse.ArgumentParser(
+        description=_DESCRIPTION,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('groups_file', metavar='groups_to_process.json',
                         nargs='?',
                         help='Specify file listing rawfiles for processing '
                              '(overrides all other file options)')
 
+    parser.add_argument("-t", "--topdir", default=default_output_dir,
+                        help="Top level data-output directory")
+
+    parser.add_argument('-o', '--outfile', nargs='?', default=default_outfile,
+                        help='Specify filename for output listing of calibrated '
+                             'data.')
+
     parser.add_argument("--amidir", default=default_ami_dir,
-                        help="Path to AMI directory, default: " + default_ami_dir)
+                        help="Path to AMI directory")
 
     parser.add_argument(
         "--amiversion", default=default_ami_version,
-        help="AMI version (digital/legacy), default: " + default_ami_version,
-        choices=['digital','legacy'])
+        help="AMI version (digital/legacy)",
+        choices=['digital', 'legacy'])
 
     parser.add_argument('-s', '--script',
-                        help='Specify non-standard reduction script')
+                        help='Specify path to non-standard reduction script')
 
     parser.add_argument('-f', '--files', nargs='*',
                         help='Specify individual files for reduction')
@@ -97,7 +114,7 @@ def process_data_groups(data_groups, output_dir, ami_dir, ami_version,
     array: 'LA' or 'SA' (Default: LA)
     """
     if not script:
-        if ami_version=='legacy':
+        if ami_version == 'legacy':
             script = driveami.scripts.standard_legacy_reduction
         else:
             script = driveami.scripts.standard_digital_reduction

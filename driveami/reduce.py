@@ -131,6 +131,14 @@ class Reduce(object):
         p.expect(self.prompt)
 
     def update_files(self):
+        """
+        Update the list of files present in the AMI DATA directory.
+        
+        Also fetches any associated comments.
+        
+        This uses the REDUCE commands ``list files`` and ``list comment``.
+
+        """
         p = self.child
         p.sendline(r'list files \ ')
         #        p.sendline(r'list comment \ ')
@@ -162,6 +170,26 @@ class Reduce(object):
                     self.files[fname][keys.comment] = cols[1]
 
     def get_obs_details(self, filename, incomplete=False):
+        """
+        Parses output from commands `list observation` and `show observation`.
+        
+        This retrieves information such as: 
+        
+            - Pointing co-ordinates
+            - Calibrator target
+            - Observation time and duration
+        
+        NB this command can cope with incomplete observations (files missing
+        an 'end' timestamp and thus marked zero-duration), 
+        it simply calls itself recursively but this time sets 'incomplete=True'.
+        
+        Args:
+            filename: File to load
+            incomplete: Use if observation is missing an end timestamp.
+
+        Returns:
+            dict: Dictionary of file info.
+        """
         p = self.child
         if not incomplete:
             p.sendline(r'list observation {0} \ '.format(filename))
@@ -206,6 +234,12 @@ class Reduce(object):
         return RaDecPair(ra.degree, dec.degree)
 
     def load_obs_info(self):
+        """
+        Load all available information for every datafile.
+         
+        First runs :func:`.update_files` to refresh the file-list,
+        then :func:`.get_obs_details` on every file.
+        """
         logger.info("Loading observation information, patience...")
         self.update_files()
         for filename, info in sorted(self.files.items()):
@@ -228,14 +262,14 @@ class Reduce(object):
         Where 'target id' is everything in the filename, up to the last '-'
 
         Returns:
-        Nested dict with structure:
-        { Field name:
-            {
-            files: [ <list of files>],
-            median_pointing: <string representation of group pointing>
-            },
-            ...
-        }
+            dict: Nested dict with structure:
+            { Field name:
+                {
+                files: [ <list of files>],
+                median_pointing: <string representation of group pointing>
+                },
+                ...
+            }
         """
 
         target_groups = {}
@@ -274,14 +308,14 @@ class Reduce(object):
         Attempt to group together datasets by inspecting pointing target.
 
         Returns:
-        Nested dict with structure:
-        { TARGET_ID:
-            {
-            files: [ <list of files>],
-            pointing: <string representation of group pointing>
-            },
-            ...
-        }
+            dict: Nested dict with structure:
+            { TARGET_ID:
+                {
+                files: [ <list of files>],
+                pointing: <string representation of group pointing>
+                },
+                ...
+            }
         """
 
         def _find_close_targets(first_target_id, ungrouped, skycoords_cache,
@@ -397,6 +431,15 @@ class Reduce(object):
             self.file_cmd_log.addHandler(logging.NullHandler())
 
     def run_command(self, command):
+        """
+        Run a given command in the AMI-REDUCE interpreter.
+        
+        Args:
+            command: 
+
+        Returns:
+
+        """
         self.file_cmd_log.debug(command)
         try:
             self.child.sendline(command)

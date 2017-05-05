@@ -1,22 +1,30 @@
 #!/usr/bin/env python
 """
-Groups AMI datasets by pointing direction,
-then dumps them in JSON format.
+Filter listings for raw AMI data
 """
 from __future__ import print_function
-import json
+
 import argparse
+import json
+import logging
 import sys
+
 import driveami
 
-import logging
 logging.basicConfig(level=logging.DEBUG)
 
 
-def handle_args():
-    """Outputs a file in JSON format listing AMI files, grouped by pointing."""
+_DESCRIPTION="""
+Filter listings for raw AMI data.
 
-    parser = argparse.ArgumentParser(description="Filter listings for raw AMI data")
+Load full listings, and then return just those groups for which any of the 
+files in the group has a filename containing the given 'match string'.
+
+Matching is insensitive to case.
+"""
+
+def handle_args():
+    parser = argparse.ArgumentParser(description=_DESCRIPTION)
 
     parser.add_argument('listings',
                        help="Path to full-list (all datasets) input file")
@@ -25,7 +33,8 @@ def handle_args():
                         help="String to match in observation groups.")
 
     parser.add_argument('-o', '--outfile', default=None,
-                       help="Specify path to matching-datasets-list output file.")
+                       help="Specify path to matching-datasets-list output file."
+                            "Default: '{matchstring}_rawfiles.json'.")
 
     args = parser.parse_args()
     return args
