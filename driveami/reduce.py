@@ -81,7 +81,7 @@ class Reduce(object):
             raise RuntimeError("Unrecognised 'reduce' binary name supplied; "
                                "unclear which command line prompt to expect")
 
-        if len(ami_rootdir) > 16:
+        if len(ami_rootdir) > 32:
             warnings.warn("Long AMI root path detected - this may cause bugs!\n"
                           "It is recommended to use a short symlink instead.\n")
         if working_dir is None:
